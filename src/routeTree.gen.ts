@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FilesIndexRouteImport } from './routes/files/index'
 import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilesIndexRoute = FilesIndexRouteImport.update({
+  id: '/files/',
+  path: '/files/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WikiIndexRoute = WikiIndexRouteImport.update({
@@ -32,30 +38,34 @@ const WikiSlugRoute = WikiSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/files': typeof FilesIndexRoute
   '/wiki': typeof WikiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/wiki/$slug' | '/wiki/'
+  fullPaths: '/' | '/wiki/$slug' | '/files/' | '/wiki/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/wiki/$slug' | '/wiki'
-  id: '__root__' | '/' | '/wiki/$slug' | '/wiki/'
+  to: '/' | '/wiki/$slug' | '/files' | '/wiki'
+  id: '__root__' | '/' | '/wiki/$slug' | '/files/' | '/wiki/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   WikiSlugRoute: typeof WikiSlugRoute
+  FilesIndexRoute: typeof FilesIndexRoute
   WikiIndexRoute: typeof WikiIndexRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/files/': {
+      id: '/files/'
+      path: '/files'
+      fullPath: '/files/'
+      preLoaderRoute: typeof FilesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wiki/': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   WikiSlugRoute: WikiSlugRoute,
+  FilesIndexRoute: FilesIndexRoute,
   WikiIndexRoute: WikiIndexRoute,
 }
 export const routeTree = rootRouteImport
