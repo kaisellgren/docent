@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as FilesIndexRouteImport } from './routes/files/index'
 import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
@@ -17,6 +18,11 @@ import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FilesIndexRoute = FilesIndexRouteImport.update({
@@ -37,12 +43,14 @@ const WikiSlugRoute = WikiSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/wiki/$slug': typeof WikiSlugRoute
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/wiki/$slug': typeof WikiSlugRoute
   '/files': typeof FilesIndexRoute
   '/wiki': typeof WikiIndexRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/wiki/$slug': typeof WikiSlugRoute
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/wiki/$slug' | '/files/' | '/wiki/'
+  fullPaths: '/' | '/chat' | '/wiki/$slug' | '/files/' | '/wiki/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/wiki/$slug' | '/files' | '/wiki'
-  id: '__root__' | '/' | '/wiki/$slug' | '/files/' | '/wiki/'
+  to: '/' | '/chat' | '/wiki/$slug' | '/files' | '/wiki'
+  id: '__root__' | '/' | '/chat' | '/wiki/$slug' | '/files/' | '/wiki/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
   WikiSlugRoute: typeof WikiSlugRoute
   FilesIndexRoute: typeof FilesIndexRoute
   WikiIndexRoute: typeof WikiIndexRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/files/': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
   WikiSlugRoute: WikiSlugRoute,
   FilesIndexRoute: FilesIndexRoute,
   WikiIndexRoute: WikiIndexRoute,

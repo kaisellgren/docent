@@ -60,6 +60,7 @@ export const createPage = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`
         UPDATE wiki_page SET current_revision_id = ${revision.id}, updated_at = now() WHERE id = ${page.id}
       `);
+      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id})`);
       return { slug, revisionId: revision.id };
     });
   });
@@ -84,6 +85,7 @@ export const updatePage = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`
         UPDATE wiki_page SET title = ${data.title}, current_revision_id = ${revision.id}, updated_at = now() WHERE id = ${current.id}
       `);
+      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id})`);
       return { revisionId: revision.id };
     });
   });
