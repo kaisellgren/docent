@@ -1,0 +1,26 @@
+import { globalStyle, style } from '@vanilla-extract/css';
+
+export const appShell = style({ minHeight: '100vh', background: 'linear-gradient(160deg, #081420, #0c2431)', color: '#eaf3f5' });
+export const shell = style({ width: 'min(1120px, calc(100% - 32px))', margin: '0 auto' });
+export const nav = style({ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.1)' });
+export const brand = style({ display: 'flex', alignItems: 'center', gap: 10, fontSize: 20, fontWeight: 700, letterSpacing: '-.03em' });
+export const hero = style({ padding: '84px 0 48px', textAlign: 'center' });
+export const eyebrow = style({ color: '#1fc8b5', fontSize: 12, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase' });
+export const headline = style({ margin: '16px 0', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1, letterSpacing: '-.06em' });
+export const gradient = style({ background: 'linear-gradient(90deg, #1fc8b5, #75a6ff)', WebkitBackgroundClip: 'text', color: 'transparent' });
+export const subhead = style({ maxWidth: 620, margin: '0 auto 34px', color: '#9ab1ba', fontSize: 17, lineHeight: 1.6 });
+export const chatBox = style({ maxWidth: 720, margin: '0 auto', padding: 10, display: 'flex', gap: 10, background: '#0f2434', border: '1px solid rgba(117,166,255,.4)', borderRadius: 18, boxShadow: '0 20px 60px rgba(2,10,16,.55)' });
+export const chatInput = style({ flex: 1, minWidth: 0, border: 0, outline: 0, padding: '12px 14px', color: 'inherit', background: 'transparent', fontSize: 16 });
+export const primaryButton = style({ border: 0, borderRadius: 12, padding: '10px 16px', background: 'linear-gradient(135deg, #1fc8b5, #3e7bfa)', color: '#04120f', cursor: 'pointer', fontWeight: 700 });
+export const secondaryButton = style({ border: '1px solid rgba(255,255,255,.16)', borderRadius: 10, padding: '8px 12px', color: '#eaf3f5', background: 'transparent', cursor: 'pointer' });
+export const section = style({ padding: '36px 0' });
+export const grid = style({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 });
+export const card = style({ padding: 18, background: '#0f2434', border: '1px solid rgba(255,255,255,.1)', borderRadius: 14 });
+export const link = style({ color: '#eaf3f5', textDecoration: 'none' });
+export const muted = style({ color: '#9ab1ba' });
+export const article = style({ maxWidth: 820, margin: '48px auto', padding: 28, background: '#0f2434', border: '1px solid rgba(255,255,255,.1)', borderRadius: 16, lineHeight: 1.7 });
+
+globalStyle('*', { boxSizing: 'border-box' });
+globalStyle('html, body', { margin: 0, minHeight: '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' });
+globalStyle('a:hover', { color: '#1fc8b5' });
+globalStyle('button:focus-visible, input:focus-visible', { outline: '2px solid #1fc8b5', outlineOffset: 2 });
