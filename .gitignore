@@ -1,0 +1,10 @@
+node_modules/
+.output/
+dist/
+coverage/
+playwright-report/
+test-results/
+cdktf.out/
+.env
+.env.*
+!.env.example
