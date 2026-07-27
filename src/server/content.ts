@@ -7,16 +7,16 @@ export const pageInputSchema = z.object({
 
 export const folderInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  parentId: z.uuid().nullable(),
+  parentId: z.string().uuid().nullable(),
 });
 
 export const chatInputSchema = z.object({
-  conversationId: z.uuid().optional(),
+  conversationId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(4_000),
 });
 
 export const uploadMetadataSchema = z.object({
-  folderId: z.uuid().nullable().optional(),
+  folderId: z.string().uuid().nullable().optional(),
   tagNames: z.array(z.string().trim().min(1).max(64)).max(20).default([]),
 });
 

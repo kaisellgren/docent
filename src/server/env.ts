@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  APP_URL: z.url().default('http://localhost:3000'),
-  DATABASE_URL: z.url(),
+  APP_URL: z.string().url().default('http://localhost:3000'),
+  DATABASE_URL: z.string().url(),
   SESSION_SECRET: z.string().min(32),
   EDITOR_EMAILS: z.string().default('kaisellgren@gmail.com'),
   GOOGLE_CLIENT_ID: z.string().min(1),
@@ -13,7 +13,7 @@ const envSchema = z.object({
   VERTEX_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
   GCS_BUCKET: z.string().optional(),
   CLOUD_TASKS_QUEUE: z.string().optional(),
-  CLOUD_RUN_TASK_URL: z.url().optional(),
+  CLOUD_RUN_TASK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

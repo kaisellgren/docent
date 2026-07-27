@@ -1,9 +1,9 @@
 import { createPool, sql, type DatabasePool } from 'slonik';
 import { env } from './env';
 
-let pool: DatabasePool | undefined;
+let pool: Promise<DatabasePool> | undefined;
 
-export function db(): DatabasePool {
+export function db(): Promise<DatabasePool> {
   pool ??= createPool(env().DATABASE_URL, { maximumPoolSize: 10 });
   return pool;
 }
