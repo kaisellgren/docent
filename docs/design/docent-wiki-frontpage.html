@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docent — Ask your company's knowledge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal: #1FC8B5;
+    --teal-dim: #16A392;
+    --blue: #3E7BFA;
+    --blue-glow: #6FA0FF;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    --bg: #081420;
+    --bg-1: #0B1B29;
+    --bg-2: #0F2434;
+    --surface: #0F2434;
+    --surface-hover: #14304487;
+    --line: rgba(255,255,255,0.09);
+    --line-strong: rgba(255,255,255,0.16);
+    --text-1: #EAF3F5;
+    --text-2: #9AB1BA;
+    --text-3: #64828C;
+    --chip-bg: rgba(31,200,181,0.10);
+    --chip-line: rgba(31,200,181,0.30);
+    --glow-a: rgba(31,200,181,0.22);
+    --glow-b: rgba(62,123,250,0.20);
+    --shadow: 0 20px 60px rgba(2,10,16,0.55);
+  }
+
+  html[data-theme="light"]{
+    --bg: #F3F8F9;
+    --bg-1: #FFFFFF;
+    --bg-2: #EAF2F3;
+    --surface: #FFFFFF;
+    --surface-hover: #F0F6F7;
+    --line: #DCE7E9;
+    --line-strong: #C6D6D9;
+    --text-1: #0B222B;
+    --text-2: #4C6870;
+    --text-3: #7C9299;
+    --chip-bg: rgba(14,156,140,0.08);
+    --chip-line: rgba(14,156,140,0.35);
+    --glow-a: rgba(31,200,181,0.16);
+    --glow-b: rgba(62,123,250,0.14);
+    --shadow: 0 20px 50px rgba(20,60,70,0.10);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background .35s var(--ease), color .35s var(--ease);
+    overflow-x: hidden;
+  }
+  h1,h2,h3, .display{ font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.01em; }
+  .mono{ font-family: 'IBM Plex Mono', monospace; }
+  a{ color: inherit; text-decoration: none; }
+  ::selection{ background: var(--teal); color: #04120F; }
+
+  :focus-visible{
+    outline: 2px solid var(--teal);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* ---------- layout shell ---------- */
+  .shell{ max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---------- nav ---------- */
+  header.nav{
+    position: sticky; top:0; z-index: 50;
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content: space-between;
+    height: 68px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:600; font-size: 18px; }
+  .brand-mark{ width: 26px; height: 26px; flex-shrink:0; }
+  .nav-links{ display:flex; align-items:center; gap: 28px; }
+  .nav-links a{
+    font-size: 14px; color: var(--text-2); font-weight: 500;
+    transition: color .2s;
+  }
+  .nav-links a:hover{ color: var(--text-1); }
+  .nav-right{ display:flex; align-items:center; gap: 16px; }
+
+  .icon-btn{
+    width: 36px; height: 36px; border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    background: transparent; border: 1px solid var(--line);
+    color: var(--text-2); cursor: pointer;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .icon-btn:hover{ border-color: var(--line-strong); color: var(--text-1); background: var(--surface-hover); }
+
+  .theme-toggle{
+    width: 52px; height: 30px; border-radius: 30px;
+    background: var(--surface); border: 1px solid var(--line);
+    position: relative; cursor: pointer; flex-shrink:0;
+    transition: background .3s;
+  }
+  .theme-toggle .knob{
+    position:absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    transition: transform .3s var(--ease);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 11px;
+  }
+  html[data-theme="light"] .theme-toggle .knob{ transform: translateX(22px); }
+
+  .avatar{
+    width: 34px; height:34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--teal));
+    display:flex; align-items:center; justify-content:center;
+    color:#04120F; font-weight:700; font-size: 13px;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position: relative;
+    padding: 84px 0 60px;
+    overflow: hidden;
+  }
+  .graph-wrap{
+    position:absolute; inset: -40px 0 auto 0;
+    height: 560px;
+    display:flex; justify-content:center;
+    pointer-events:none;
+    opacity: .9;
+  }
+  .graph-wrap svg{ width: 100%; max-width: 1180px; height: 100%; }
+  .node-dot{ fill: var(--teal); }
+  .node-label{
+    font-family:'IBM Plex Mono', monospace; font-size: 11px;
+    fill: var(--text-3); letter-spacing: .03em;
+  }
+  .edge{
+    stroke: var(--line-strong); stroke-width: 1; fill:none; opacity:.55;
+  }
+  .edge.flow{
+    stroke: url(#edgeGrad);
+    stroke-width: 1.4;
+    stroke-dasharray: 6 10;
+    animation: dash 5.5s linear infinite;
+    opacity: .9;
+  }
+  @keyframes dash{ to{ stroke-dashoffset: -160; } }
+
+  .hero-inner{ position:relative; z-index:2; text-align:center; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--teal); letter-spacing: .08em; text-transform: uppercase;
+    padding: 6px 12px; border: 1px solid var(--chip-line);
+    background: var(--chip-bg); border-radius: 999px;
+    margin-bottom: 26px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+
+  h1.headline{
+    font-size: clamp(34px, 5.4vw, 58px);
+    line-height: 1.06;
+    font-weight: 600;
+    margin: 0 0 18px;
+  }
+  h1.headline .grad{
+    background: linear-gradient(100deg, var(--teal) 10%, var(--blue-glow) 90%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .subhead{
+    font-size: 17px; color: var(--text-2); max-width: 540px;
+    margin: 0 auto 44px; line-height:1.55;
+  }
+
+  /* ---------- chat console ---------- */
+  .console{
+    max-width: 680px; margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 8px;
+    position:relative;
+  }
+  .console::before{
+    content:"";
+    position:absolute; inset:-1px;
+    border-radius: inherit;
+    padding:1px;
+    background: linear-gradient(120deg, var(--glow-a), transparent 40%, var(--glow-b));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events:none;
+  }
+  .console-input-row{
+    display:flex; align-items:center; gap: 10px;
+    padding: 10px 8px 10px 18px;
+  }
+  .console-input-row input{
+    flex:1; border:none; outline:none; background:transparent;
+    font-family:'Inter'; font-size: 15.5px; color: var(--text-1);
+  }
+  .console-input-row input::placeholder{ color: var(--text-3); }
+  .send-btn{
+    width: 40px; height: 40px; border-radius: 12px; border:none;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    color:#04120F; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+    transition: transform .15s var(--ease), filter .15s;
+  }
+  .send-btn:hover{ filter: brightness(1.08); transform: translateY(-1px); }
+
+  .chip-row{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+    margin-top: 18px;
+  }
+  .chip{
+    font-size: 13px; color: var(--text-2);
+    border: 1px solid var(--line); background: var(--surface);
+    padding: 7px 13px; border-radius: 999px; cursor:pointer;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .chip:hover{ border-color: var(--chip-line); color: var(--text-1); background: var(--chip-bg); }
+
+  /* live demo exchange */
+  .exchange{
+    max-width: 640px; margin: 34px auto 0; text-align:left;
+  }
+  .bubble{
+    opacity:0; transform: translateY(8px);
+    animation: rise .5s var(--ease) forwards;
+  }
+  .bubble.user{ animation-delay: .5s; display:flex; justify-content:flex-end; margin-bottom:10px; }
+  .bubble.user span{
+    background: var(--chip-bg); border: 1px solid var(--chip-line);
+    color: var(--text-1); font-size: 14px;
+    padding: 9px 15px; border-radius: 14px 14px 3px 14px;
+  }
+  .bubble.ai{ animation-delay: 1.15s; }
+  .ai-card{
+    background: var(--surface); border:1px solid var(--line);
+    border-radius: 14px; padding: 16px 18px;
+  }
+  .ai-card p{ margin:0 0 12px; font-size: 14.5px; line-height:1.6; color: var(--text-1); }
+  .sources{ display:flex; flex-wrap:wrap; gap:8px; }
+  .source-chip{
+    opacity:0; animation: rise .4s var(--ease) forwards; animation-delay: 1.7s;
+    font-family:'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--text-2); background: var(--bg-2);
+    border:1px solid var(--line); border-radius:7px;
+    padding: 5px 9px; display:flex; align-items:center; gap:6px;
+  }
+  .source-chip .sq{ width:6px;height:6px;border-radius:2px; background: var(--teal); }
+  @keyframes rise{ to{ opacity:1; transform: translateY(0); } }
+
+  @media (prefers-reduced-motion: reduce){
+    .bubble, .source-chip{ animation: none !important; opacity:1 !important; transform:none !important; }
+    .edge.flow{ animation:none; }
+  }
+
+  /* ---------- stats strip ---------- */
+  .stats-strip{
+    display:flex; justify-content:center; gap: 34px; flex-wrap:wrap;
+    padding: 30px 0; margin-top: 10px;
+    border-top: 1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-3);
+  }
+  .stats-strip b{ color: var(--text-1); font-weight:500; }
+
+  /* ---------- sections ---------- */
+  section{ padding: 64px 0; }
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 26px; gap: 20px; flex-wrap:wrap;
+  }
+  .section-head h2{ font-size: 22px; font-weight: 600; margin:0; }
+  .section-head .view-all{ font-size: 13px; color: var(--teal); font-weight:500; }
+
+  .spaces-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .space-card{
+    background: var(--surface); border:1px solid var(--line);
+    border-radius: var(--radius-md); padding: 20px;
+    transition: border-color .2s, transform .2s var(--ease), box-shadow .2s;
+    cursor:pointer;
+  }
+  .space-card:hover{
+    border-color: var(--chip-line); transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+  }
+  .space-icon{
+    width: 38px; height:38px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--chip-bg); color: var(--teal);
+    margin-bottom: 14px; font-size:17px;
+  }
+  .space-card h3{ font-size: 15.5px; font-weight:600; margin: 0 0 4px; }
+  .space-meta{ font-size: 12.5px; color: var(--text-3); font-family:'IBM Plex Mono', monospace; }
+
+  .doc-list{ border-top: 1px solid var(--line); }
+  .doc-row{
+    display:flex; align-items:center; gap: 16px;
+    padding: 15px 4px; border-bottom: 1px solid var(--line);
+    transition: background .2s;
+    border-radius: 8px;
+  }
+  .doc-row:hover{ background: var(--surface-hover); }
+  .doc-title{ font-size: 14.5px; font-weight:500; flex:1; }
+  .doc-tag{
+    font-size: 11px; font-family:'IBM Plex Mono', monospace;
+    color: var(--teal); background: var(--chip-bg);
+    border:1px solid var(--chip-line); padding:3px 8px; border-radius: 6px;
+    flex-shrink:0;
+  }
+  .doc-author{ font-size: 12.5px; color: var(--text-2); width: 120px; flex-shrink:0; }
+  .doc-time{ font-size: 12px; color: var(--text-3); font-family:'IBM Plex Mono', monospace; width: 70px; text-align:right; flex-shrink:0; }
+
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 30px 0; margin-top: 30px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size: 12.5px; color: var(--text-3); flex-wrap:wrap; gap:12px;
+  }
+  footer .flinks{ display:flex; gap: 20px; }
+  footer a:hover{ color: var(--text-1); }
+
+  @media (max-width: 860px){
+    .spaces-grid{ grid-template-columns: repeat(2,1fr); }
+    .nav-links{ display:none; }
+    .doc-author{ display:none; }
+  }
+  @media (max-width: 560px){
+    .shell{ padding: 0 18px; }
+    .spaces-grid{ grid-template-columns: 1fr; }
+    h1.headline{ font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="shell nav-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="5" r="2.6" fill="currentColor" opacity=".95"/>
+        <circle cx="5" cy="19" r="2.6" fill="currentColor" opacity=".7"/>
+        <circle cx="21" cy="19" r="2.6" fill="currentColor" opacity=".7"/>
+        <path d="M13 7.6 L6.2 17 M13 7.6 L19.8 17 M7.6 19 L18.4 19" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+      </svg>
+      Docent
+    </div>
+    <nav class="nav-links">
+      <a href="#">Spaces</a>
+      <a href="#">Recent</a>
+      <a href="#">People</a>
+      <a href="#">Create</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" aria-label="Search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"><div class="knob">☀</div></button>
+      <div class="avatar">JK</div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="graph-wrap" aria-hidden="true">
+    <svg viewBox="0 0 1180 560" preserveAspectRatio="xMidYMin meet">
+      <defs>
+        <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#1FC8B5"/>
+          <stop offset="1" stop-color="#3E7BFA"/>
+        </linearGradient>
+      </defs>
+      <!-- converge point sits just above the console -->
+      <g>
+        <path class="edge flow" d="M 150 90 C 300 90, 420 260, 590 330"/>
+        <path class="edge"      d="M 300 40 C 380 120, 480 220, 590 330"/>
+        <path class="edge flow" d="M 1030 90 C 880 90, 760 260, 590 330"/>
+        <path class="edge"      d="M 880 40 C 800 120, 700 220, 590 330"/>
+        <path class="edge"      d="M 150 90 C 200 250, 320 300, 460 250"/>
+        <path class="edge"      d="M 1030 90 C 980 250, 860 300, 720 250"/>
+      </g>
+      <g>
+        <circle class="node-dot" cx="150" cy="90" r="3.5"/>
+        <text class="node-label" x="150" y="76" text-anchor="middle">ENGINEERING</text>
+
+        <circle class="node-dot" cx="300" cy="40" r="3.5"/>
+        <text class="node-label" x="300" y="26" text-anchor="middle">PRODUCT</text>
+
+        <circle class="node-dot" cx="880" cy="40" r="3.5"/>
+        <text class="node-label" x="880" y="26" text-anchor="middle">DESIGN</text>
+
+        <circle class="node-dot" cx="1030" cy="90" r="3.5"/>
+        <text class="node-label" x="1030" y="76" text-anchor="middle">PEOPLE OPS</text>
+
+        <circle class="node-dot" cx="460" cy="250" r="3"/>
+        <text class="node-label" x="460" y="238" text-anchor="middle">FINANCE</text>
+
+        <circle class="node-dot" cx="720" cy="250" r="3"/>
+        <text class="node-label" x="720" y="238" text-anchor="middle">SALES</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="shell hero-inner">
+    <div class="eyebrow"><span class="dot"></span> Internal knowledge base</div>
+    <h1 class="headline">Ask Docent anything.<br><span class="grad">It already knows.</span></h1>
+    <p class="subhead">Every space, page and decision your team has written down — searchable in one conversation, with the source pages cited every time.</p>
+
+    <div class="console">
+      <div class="console-input-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3); flex-shrink:0;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Ask about a policy, a project, or who owns what…" aria-label="Ask Docent">
+        <button class="send-btn" aria-label="Ask">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04120F" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="chip-row">
+      <div class="chip">What's our parental leave policy?</div>
+      <div class="chip">Who owns the payments service?</div>
+      <div class="chip">Summarize the Q3 roadmap</div>
+      <div class="chip">How do I expense a conference?</div>
+    </div>
+
+    <div class="exchange">
+      <div class="bubble user"><span>Who owns the payments service, and where's the runbook?</span></div>
+      <div class="bubble ai">
+        <div class="ai-card">
+          <p><b style="color:var(--text-1)">Payments Platform</b> is owned by the Checkout team, with <b>Mira Solano</b> as the on-call lead this sprint. The incident runbook covers failover, refund reconciliation, and the PSP escalation path.</p>
+          <div class="sources">
+            <div class="source-chip"><span class="sq"></span> Payments Platform — Ownership</div>
+            <div class="source-chip"><span class="sq"></span> Runbook: Checkout Incidents</div>
+            <div class="source-chip"><span class="sq"></span> Team Directory · Checkout</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="stats-strip">
+      <span><b>2,314</b> pages</span>
+      <span><b>6</b> spaces</span>
+      <span><b>128</b> contributors</span>
+      <span>last sync <b>3m ago</b></span>
+    </div>
+  </div>
+</section>
+
+<div class="shell">
+  <section>
+    <div class="section-head">
+      <h2>Spaces</h2>
+      <a class="view-all" href="#">View all →</a>
+    </div>
+    <div class="spaces-grid">
+      <div class="space-card">
+        <div class="space-icon">⌁</div>
+        <h3>Engineering</h3>
+        <div class="space-meta">612 pages · updated 8m ago</div>
+      </div>
+      <div class="space-card">
+        <div class="space-icon">◧</div>
+        <h3>Product</h3>
+        <div class="space-meta">340 pages · updated 41m ago</div>
+      </div>
+      <div class="space-card">
+        <div class="space-icon">◎</div>
+        <h3>Design</h3>
+        <div class="space-meta">198 pages · updated 2h ago</div>
+      </div>
+      <div class="space-card">
+        <div class="space-icon">✦</div>
+        <h3>People Ops</h3>
+        <div class="space-meta">274 pages · updated 1h ago</div>
+      </div>
+      <div class="space-card">
+        <div class="space-icon">◫</div>
+        <h3>Sales</h3>
+        <div class="space-meta">156 pages · updated 5h ago</div>
+      </div>
+      <div class="space-card">
+        <div class="space-icon">▤</div>
+        <h3>Finance</h3>
+        <div class="space-meta">204 pages · updated 3h ago</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Recently updated</h2>
+      <a class="view-all" href="#">View all →</a>
+    </div>
+    <div class="doc-list">
+      <div class="doc-row">
+        <div class="doc-title">Q3 Roadmap — Checkout &amp; Payments</div>
+        <div class="doc-tag">PRODUCT</div>
+        <div class="doc-author">Mira Solano</div>
+        <div class="doc-time">8m ago</div>
+      </div>
+      <div class="doc-row">
+        <div class="doc-title">Parental Leave Policy (2026 update)</div>
+        <div class="doc-tag">PEOPLE OPS</div>
+        <div class="doc-author">Dana Iyer</div>
+        <div class="doc-time">41m ago</div>
+      </div>
+      <div class="doc-row">
+        <div class="doc-title">Runbook: Checkout Incidents</div>
+        <div class="doc-tag">ENGINEERING</div>
+        <div class="doc-author">Théo Brandt</div>
+        <div class="doc-time">1h ago</div>
+      </div>
+      <div class="doc-row">
+        <div class="doc-title">Design System — Color &amp; Typography Tokens</div>
+        <div class="doc-tag">DESIGN</div>
+        <div class="doc-author">Amara Osei</div>
+        <div class="doc-time">2h ago</div>
+      </div>
+      <div class="doc-row">
+        <div class="doc-title">Expense Policy: Conferences &amp; Travel</div>
+        <div class="doc-tag">FINANCE</div>
+        <div class="doc-author">Lukas Wren</div>
+        <div class="doc-time">3h ago</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>© 2026 Docent — internal knowledge base</div>
+    <div class="flinks">
+      <a href="#">Status</a>
+      <a href="#">Admin</a>
+      <a href="#">Help</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const toggle = document.getElementById('themeToggle');
+  const root = document.documentElement;
+  toggle.addEventListener('click', () => {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    toggle.querySelector('.knob').textContent = isDark ? '☾' : '☀';
+  });
+</script>
+
+</body>
+</html>
