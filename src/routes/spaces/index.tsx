@@ -3,6 +3,7 @@ import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { Grid2X2, List, Plus, Search } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { TopNavigation } from "@/components/navigation";
+import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
 import { createSpace, getSpaces } from "@/features/wiki/server";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
@@ -26,6 +27,7 @@ function SpacesIndex() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [icon, setIcon] = useState<SpaceIconName>("book-open");
   const [error, setError] = useState("");
   const filteredSpaces = useMemo(
     () =>
@@ -39,9 +41,10 @@ function SpacesIndex() {
     event.preventDefault();
     setError("");
     try {
-      await create({ data: { name, description } });
+      await create({ data: { name, description, icon } });
       setName("");
       setDescription("");
+      setIcon("book-open");
       setCreating(false);
       await router.invalidate();
     } catch (cause) {
@@ -130,6 +133,20 @@ function SpacesIndex() {
                 placeholder="What belongs in this space?"
                 required
               />
+              <label className={styles.spacesIconField}>
+                <span>Icon</span>
+                <select
+                  className={styles.spacesFormSelect}
+                  value={icon}
+                  onChange={(event) => setIcon(event.target.value as SpaceIconName)}
+                  aria-label="Space icon"
+                >
+                  {SPACE_ICON_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <span className={styles.spaceIcon}><SpaceIcon name={icon} size={20} /></span>
               <button className={styles.primaryButton}>Create space</button>
               <button
                 type="button"
@@ -179,7 +196,7 @@ function SpacesIndex() {
           ) : (
             <>
               <div className={`${styles.spacesGrid} ${listView ? styles.spacesGridList : ""}`}>
-                {filteredSpaces.map((space, index) => (
+                {filteredSpaces.map((space) => (
                   <Link
                     className={styles.spaceCard}
                     key={space.id}
@@ -188,7 +205,7 @@ function SpacesIndex() {
                   >
                     <div className={styles.spaceCardTop}>
                       <span className={styles.spaceIcon}>
-                        {SPACE_ICONS[index % SPACE_ICONS.length]}
+                        <SpaceIcon name={space.icon} />
                       </span>
                       <span className={styles.spaceKey}>
                         {space.slug.slice(0, 3).toUpperCase()}
@@ -215,8 +232,6 @@ function SpacesIndex() {
     </div>
   );
 }
-
-const SPACE_ICONS = ["⌁", "◧", "◎", "✦", "◫", "▤"];
 
 function relativeTime(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));

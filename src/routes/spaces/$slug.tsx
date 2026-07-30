@@ -8,6 +8,7 @@ import { attachFileToPage, detachFileFromPage, getPageAttachments, getSpaceFiles
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
 import { TopNavigation } from '@/components/navigation';
+import { SpaceIcon } from '@/components/space-icon';
 import * as styles from '@/styles/app.css';
 
 const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession());
@@ -92,9 +93,9 @@ function PageView() {
       </div>
     </div>
     <main className={`${styles.shell} ${styles.pageViewBody}`}>
-      <PageTree pages={spacePages} currentId={page.id} spaceSlug={page.spaceSlug} />
+      <PageTree pages={spacePages} currentId={page.id} spaceSlug={page.spaceSlug} spaceIcon={page.spaceIcon} />
       <article className={styles.pageArticle}>
-        <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}>◎ {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span></div></div>
+        <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}><SpaceIcon name={page.spaceIcon} size={14} /> {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span></div></div>
         {editing ? <form className={styles.pageEditForm} onSubmit={save}><input className={styles.pageEditTitle} value={title} onChange={(event) => setTitle(event.target.value)} disabled={Boolean(pendingAction)} required /><textarea className={styles.pageEditTextarea} value={markdown} onChange={(event) => setMarkdown(event.target.value)} disabled={Boolean(pendingAction)} required /><div className={styles.actions}><button className={styles.pageActionPrimary} disabled={Boolean(pendingAction)}>{isPending('save this revision') ? 'Saving…' : 'Save revision'}</button><button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { setEditing(false); setTitle(page.title); setMarkdown(page.markdown); }}>Cancel</button></div></form> : <div className={styles.pageProse}><ReactMarkdown components={{ h2: ({ children }) => <h2 id={headingId(children)}>{children}</h2>, h3: ({ children }) => <h3 id={headingId(children)}>{children}</h3> }}>{page.markdown}</ReactMarkdown></div>}
         {notice && <p className={styles.feedbackSuccess} role="status">{notice}</p>}{error && <p className={styles.feedbackError} role="alert">{error}</p>}
         <section className={styles.pageAttachments}><h2>Attachments</h2>{attachments.length === 0 && <p className={styles.muted}>No files are attached to this page.</p>}{attachments.map((file) => <div className={styles.pageAttachment} key={file.id}><span><b>{file.filename}</b><br /><small>{file.mediaType.split('/').pop()} · {(file.sizeBytes / 1024).toFixed(0)} KiB{file.tags.length ? ` · ${file.tags.join(', ')}` : ''}</small></span>{viewer.isEditor && <button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { void detachFile(file.id); }}>{isPending('detach this file') ? 'Detaching…' : 'Detach'}</button>}</div>)}{viewer.isEditor && <div className={styles.actions}><select value={attachmentFileId} disabled={Boolean(pendingAction) || availableFiles.length === 0} onChange={(event) => setAttachmentFileId(event.target.value)}><option value="">{availableFiles.length ? 'Attach a library file' : 'All library files are attached'}</option>{availableFiles.map((file) => <option key={file.id} value={file.id}>{file.filename}</option>)}</select><button type="button" className={styles.pageActionButton} disabled={!attachmentFileId || Boolean(pendingAction)} onClick={() => { void attachSelectedFile(); }}>{isPending('attach this file') ? 'Attaching…' : 'Attach file'}</button></div>}</section>
@@ -105,10 +106,10 @@ function PageView() {
   </div>;
 }
 
-function PageTree({ pages, currentId, spaceSlug }: { pages: SpacePages; currentId: string; spaceSlug: string }) {
+function PageTree({ pages, currentId, spaceSlug, spaceIcon }: { pages: SpacePages; currentId: string; spaceSlug: string; spaceIcon: Parameters<typeof SpaceIcon>[0]["name"] }) {
   const render = (parentId: string | null): ReactNode => <ul className={parentId ? styles.pageMiniTreeNested : styles.pageMiniTree}>{pages.filter((item) => item.parentPageId === parentId).map((item) => <li key={item.id}><Link className={item.id === currentId ? styles.pageMiniTreeCurrent : styles.pageMiniTreeRow} to="/spaces/$slug" params={{ slug: item.slug }}>{item.title}</Link>{render(item.id)}</li>)}</ul>;
   const current = pages.find((item) => item.id === currentId);
-  return <nav className={styles.pageSideNav}><Link className={styles.pageSpaceTag} to="/spaces/space/$slug" params={{ slug: spaceSlug }}><span className={styles.pageSpaceIcon}>◎</span>{current ? 'Space pages' : 'Space'}</Link>{render(null)}</nav>;
+  return <nav className={styles.pageSideNav}><Link className={styles.pageSpaceTag} to="/spaces/space/$slug" params={{ slug: spaceSlug }}><span className={styles.pageSpaceIcon}><SpaceIcon name={spaceIcon} size={13} /></span>{current ? 'Space pages' : 'Space'}</Link>{render(null)}</nav>;
 }
 
 function PageSidebar({ headings, contributors, page, revisions, wordCount }: { headings: Heading[]; contributors: string[]; page: { createdAt: string }; revisions: number; wordCount: number }) {

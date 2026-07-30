@@ -25,6 +25,7 @@ import {
 } from "@/features/files/server";
 import { getSpace, getSpacePages } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
+import { SpaceIcon } from "@/components/space-icon";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
 
@@ -145,7 +146,7 @@ function SpacePage() {
         <section className={styles.spaceHeader}>
           <div className={styles.spaceHeadTop}>
             <div className={styles.spaceIdentity}>
-              <div className={styles.spaceLargeIcon}>◎</div>
+              <div className={styles.spaceLargeIcon}><SpaceIcon name={space.icon} size={26} /></div>
               <div>
                 <h1 className={styles.spaceTitle}>
                   {space.name}{" "}

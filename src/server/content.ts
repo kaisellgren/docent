@@ -8,6 +8,7 @@ export const pageInputSchema = z.object({
 export const spaceInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500),
+  icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']),
 });
 
 export const folderInputSchema = z.object({

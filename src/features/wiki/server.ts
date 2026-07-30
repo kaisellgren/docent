@@ -6,13 +6,13 @@ import { requireEditor, requireSession } from '@/server/auth';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const pageSummarySchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), updatedAt: z.string(), author: z.string() });
-const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int(), createdAt: z.string(), spaceId: z.string().uuid(), spaceSlug: z.string(), spaceName: z.string(), parentPageId: z.string().uuid().nullable() });
+const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int(), createdAt: z.string(), spaceId: z.string().uuid(), spaceSlug: z.string(), spaceName: z.string(), spaceIcon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), parentPageId: z.string().uuid().nullable() });
 const revisionSummarySchema = z.object({ id: z.string().uuid(), revisionNumber: z.number().int(), title: z.string(), createdAt: z.string(), author: z.string() });
 const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
 const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
-const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), pageCount: z.number().int(), updatedAt: z.string() });
+const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), pageCount: z.number().int(), updatedAt: z.string() });
 const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string() });
 
 function slugify(title: string): string {
@@ -35,7 +35,7 @@ export const getRecentPages = createServerFn({ method: 'GET' }).handler(async ()
 export const getSpaces = createServerFn({ method: 'GET' }).handler(async () => {
   await requireSession();
   return (await db()).any(sql.type(spaceSchema)`
-    SELECT s.id, s.slug, s.name, s.description, COUNT(p.id)::integer AS "pageCount",
+    SELECT s.id, s.slug, s.name, s.description, s.icon, COUNT(p.id)::integer AS "pageCount",
       GREATEST(s.updated_at, COALESCE(MAX(p.updated_at), s.updated_at))::text AS "updatedAt"
     FROM wiki_space s
     LEFT JOIN wiki_page p ON p.space_id = s.id AND p.deleted_at IS NULL
@@ -50,7 +50,7 @@ export const getSpace = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     await requireSession();
     return (await db()).maybeOne(sql.type(spaceSchema)`
-      SELECT id, slug, name, description, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
+      SELECT id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
       FROM wiki_space WHERE slug = ${data.slug} AND archived_at IS NULL
     `);
   });
@@ -75,9 +75,9 @@ export const createSpace = createServerFn({ method: 'POST' })
     const existing = await (await db()).maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM wiki_space WHERE slug = ${slug}`);
     if (existing) throw new Response('A space with this name already exists. Choose a different name.', { status: 409 });
     return (await db()).one(sql.type(spaceSchema)`
-      INSERT INTO wiki_space (slug, name, description, created_by)
-      VALUES (${slug}, ${data.name}, ${data.description}, ${user.userId})
-      RETURNING id, slug, name, description, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
+      INSERT INTO wiki_space (slug, name, description, icon, created_by)
+      VALUES (${slug}, ${data.name}, ${data.description}, ${data.icon}, ${user.userId})
+      RETURNING id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
     `);
   });
 
@@ -87,7 +87,7 @@ export const getPage = createServerFn({ method: 'GET' })
     await requireSession();
     return (await db()).maybeOne(sql.type(pageSchema)`
       SELECT p.id, p.slug, p.title, p.updated_at::text AS "updatedAt", p.created_at::text AS "createdAt",
-        p.space_id AS "spaceId", s.slug AS "spaceSlug", s.name AS "spaceName", p.parent_page_id AS "parentPageId", u.display_name AS author,
+        p.space_id AS "spaceId", s.slug AS "spaceSlug", s.name AS "spaceName", s.icon AS "spaceIcon", p.parent_page_id AS "parentPageId", u.display_name AS author,
         r.markdown, r.id AS "revisionId", r.revision_number AS "revisionNumber"
       FROM wiki_page p
       JOIN page_revision r ON r.id = p.current_revision_id

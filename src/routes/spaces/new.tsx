@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPage, getSpacePages, getSpaces } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
+import { SpaceIcon } from "@/components/space-icon";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
 
@@ -183,7 +184,8 @@ function CreatePage() {
             />
             <div className={styles.editorMeta}>
               <span className={styles.editorSpace}>
-                ⌁ {spaces.find((space) => space.id === spaceId)?.name ?? "Choose a space"}
+                {spaces.find((space) => space.id === spaceId) && <SpaceIcon name={spaces.find((space) => space.id === spaceId)!.icon} size={13} />}
+                {spaces.find((space) => space.id === spaceId)?.name ?? "Choose a space"}
               </span>
               <span>Draft</span>
               <span>·</span>
