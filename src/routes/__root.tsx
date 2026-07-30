@@ -3,7 +3,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import { appShell } from '@/styles/app.css';
 
 export const Route = createRootRoute({
-  head: () => ({ meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title: 'Docent — internal knowledge base' }] }),
+  head: () => ({ meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title: 'Docent — internal knowledge base' }], links: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }] }),
   component: RootComponent,
 });
 
