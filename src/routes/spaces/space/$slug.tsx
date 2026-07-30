@@ -147,7 +147,7 @@ function SpacePage() {
             <div className={styles.spaceIdentity}>
               <div className={styles.spaceLargeIcon}>◎</div>
               <div>
-                <h1>
+                <h1 className={styles.spaceTitle}>
                   {space.name}{" "}
                   <span className={styles.spaceKeyBadge}>
                     {space.slug.slice(0, 3).toUpperCase()}

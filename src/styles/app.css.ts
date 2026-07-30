@@ -128,6 +128,7 @@ export const detailUser = style({ color: '#64828c', fontSize: '1.3rem' });
 export const spaceHeader = style({ padding: '3.4rem 0 0' });
 export const spaceHeadTop = style({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.8rem' });
 export const spaceIdentity = style({ display: 'flex', gap: '1.6rem' });
+export const spaceTitle = style({ marginTop: 0 });
 export const spaceLargeIcon = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '5.8rem', height: '5.8rem', flexShrink: 0, border: '0.1rem solid rgba(31,200,181,.3)', borderRadius: '1.6rem', background: 'rgba(31,200,181,.1)', color: '#1fc8b5', fontSize: '2.6rem' });
 export const spaceKeyBadge = style({ padding: '0.3rem 0.8rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '0.6rem', color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.1rem', fontWeight: 400 });
 export const spaceActions = style({ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' });
