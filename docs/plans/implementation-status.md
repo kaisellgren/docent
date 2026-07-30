@@ -4,19 +4,19 @@ Updated: 2026-07-30
 
 ## Honest roadmap progress
 
-Overall completion is approximately **55–60%**: three roadmap steps are complete and the remaining seven are partial.
+Overall completion is approximately **70%**: foundation, data, authentication, wiki, and CI/CD are complete; the remaining work is concentrated in file-library polish, ingestion validation, chat streaming, budget alerts, and test coverage.
 
 | Roadmap step | Status | What exists | What remains |
 | --- | --- | --- | --- |
 | 1. Foundation | Complete | Node 26 / TypeScript 7 scaffold, Podman Compose PostgreSQL+pgvector, dbmate config, roadmap, Vite/TanStack configuration | Verify Podman on a host where Podman is available |
-| 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations; migration applied to local PostgreSQL | Run migration against Neon when its connection URL is provisioned |
-| 3. Auth | Complete | Google OAuth start/callback/logout server routes, signed sessions, deploy-time `EDITOR_EMAILS` role checks, and verified local Google sign-in | Register the Cloud Run callback URL before production deployment |
-| 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, and restore-as-new-revision | Better mutation errors and page attachment UI |
+| 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations; migrations applied to local PostgreSQL and Neon | — |
+| 3. Auth | Complete | Google OAuth start/callback/logout server routes, signed sessions, deploy-time `EDITOR_EMAILS` role checks, and verified local and deployed Cloud Run Google sign-in | — |
+| 4. Wiki pages | Complete | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, restore-as-new-revision, page attachments, accessible mutation feedback, pending states, and duplicate-title handling | — |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
-| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, authenticated worker endpoint, and task caller identity/IAM | Configure the Cloud Run task target after its first deployment, retry action/status UI, integration tests |
+| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, an authenticated Cloud Run worker endpoint, and task caller identity/IAM | Validate the deployed upload-to-indexing path, then add retry action/status UI and integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |
 | 8. GCP infrastructure | Partial | One deployed dev environment: Cloud Run, Storage, Cloud Tasks, Artifact Registry, runtime/task service accounts, least-privilege IAM, populated Secret Manager versions, a versioned GCS Terraform backend, and GitHub WIF. Cloud Run responds with HTTP 200 and CDKTF synthesis succeeds. | Budget alert |
-| 9. CI/CD | Partial | GitHub Actions runs verification and has a main-only keyless pipeline for infrastructure, Neon migrations, image publishing, Cloud Run deployment, and smoke testing. | Add the documented repository variables/Neon secret and verify the first GitHub run |
+| 9. CI/CD | Complete | GitHub Actions runs verification and a main-only keyless pipeline for infrastructure, Neon migrations, image publishing, Cloud Run deployment, and smoke testing; the first full deployment succeeded | — |
 | 10. Test coverage | Partial | Vitest and Playwright configuration plus ingestion chunking unit tests | Database/worker unit tests, Playwright journeys, and running them in CI |
 
 ## Existing commits
@@ -34,18 +34,19 @@ Overall completion is approximately **55–60%**: three roadmap steps are comple
 
 - `npm install` completes, with existing transitive Mastra peer-dependency warnings and npm audit findings.
 - `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
-- `npm run db:migrate` was run against local Podman PostgreSQL: `20260728100000_initial_schema.sql` is applied, with zero pending migrations.
+- `npm run db:migrate` was run against local Podman PostgreSQL, and the deploy workflow applied `20260728100000_initial_schema.sql` to Neon.
 - `npm run infra:synth` successfully generated the `docent-dev` Terraform stack.
 - `npm run ingestion:worker` runs against local PostgreSQL and cleanly reports pending-job results; local Application Default Credentials are configured for GCS/Vertex processing.
 - The `docent-dev` GCP bootstrap and Cloud Run service are deployed. Cloud Run, Storage, and Vertex use `europe-north1`; the `docent-ingestion` Cloud Tasks queue uses `europe-west1`, because Cloud Tasks does not support `europe-north1`.
+- The first GitHub Actions deployment completed successfully: it synthesized/deployed infrastructure, ran Neon migrations, published the container, deployed Cloud Run, and passed its smoke test. Google sign-in is verified on the deployed URL.
 
 ## Recommended continuation order
 
-1. Register the deployed Cloud Run Google OAuth callback, then verify production sign-in.
-2. Set the local GCS bucket value and validate one local upload/indexing cycle against the dev GCS bucket and Vertex AI.
-3. Add integration coverage for page/file indexing and retry/status UI.
+1. Validate one deployed upload/indexing cycle against the dev GCS bucket and Vertex AI.
+2. Complete folder delete/move UX and add file/indexing integration coverage.
+3. Add retry/status UI for ingestion failures.
 4. Add streaming to the Mastra chat flow.
-5. Configure remote Terraform state, budget alert, and GitHub OIDC deployment, then expand Vitest and Playwright coverage.
+5. Configure the budget alert, then expand Vitest, Playwright, and CI coverage.
 
 ## Important configuration
 

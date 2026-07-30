@@ -19,8 +19,13 @@ export const card = style({ padding: 18, background: '#0f2434', border: '1px sol
 export const link = style({ color: '#eaf3f5', textDecoration: 'none' });
 export const muted = style({ color: '#9ab1ba' });
 export const article = style({ maxWidth: 820, margin: '48px auto', padding: 28, background: '#0f2434', border: '1px solid rgba(255,255,255,.1)', borderRadius: 16, lineHeight: 1.7 });
+export const feedback = style({ margin: '16px 0', padding: '10px 12px', borderRadius: 10 });
+export const feedbackSuccess = style([feedback, { color: '#c9f7e9', background: 'rgba(31,200,181,.13)', border: '1px solid rgba(31,200,181,.35)' }]);
+export const feedbackError = style([feedback, { color: '#ffd7d7', background: 'rgba(235,87,87,.13)', border: '1px solid rgba(235,87,87,.42)' }]);
+export const actions = style({ display: 'flex', flexWrap: 'wrap', gap: 10, margin: '18px 0' });
 
 globalStyle('*', { boxSizing: 'border-box' });
 globalStyle('html, body', { margin: 0, minHeight: '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' });
 globalStyle('a:hover', { color: '#1fc8b5' });
 globalStyle('button:focus-visible, input:focus-visible', { outline: '2px solid #1fc8b5', outlineOffset: 2 });
+globalStyle('button:disabled', { cursor: 'not-allowed', opacity: .6 });

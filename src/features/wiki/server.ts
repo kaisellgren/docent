@@ -64,6 +64,14 @@ export const createPage = createServerFn({ method: 'POST' })
     const pool = await db();
     const slug = slugify(data.title);
     const result = await pool.transaction(async (transaction) => {
+      const existing = await transaction.maybeOne(sql.type(z.object({ deletedAt: z.string().nullable() }))`
+        SELECT deleted_at::text AS "deletedAt" FROM wiki_page WHERE slug = ${slug}
+      `);
+      if (existing) {
+        throw new Response(existing.deletedAt
+          ? 'A deleted page already uses this page address. Choose a different title.'
+          : 'A page with this title already exists. Choose a different title.', { status: 409 });
+      }
       const page = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
         INSERT INTO wiki_page (slug, title, created_by)
         VALUES (${slug}, ${data.title}, ${user.userId})
