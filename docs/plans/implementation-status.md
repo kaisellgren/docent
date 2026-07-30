@@ -15,7 +15,7 @@ Overall completion is approximately **55–60%**: three roadmap steps are comple
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, authenticated worker endpoint, and task caller identity/IAM | Configure the Cloud Run task target after its first deployment, retry action/status UI, integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |
-| 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, separate runtime/task service accounts, least-privilege IAM, Secret Manager placeholders, and runnable Cloud Run container image; CDKTF synthesis succeeds | Secret-version env mounts; task target; budget alert; WIF resources |
+| 8. GCP infrastructure | Partial | One deployed dev environment: Cloud Run, Storage, Cloud Tasks, Artifact Registry, runtime/task service accounts, least-privilege IAM, populated Secret Manager versions, and a runnable container image. Cloud Run responds with HTTP 200 and CDKTF synthesis succeeds. | Budget alert; WIF resources; remote Terraform state before CI/CD |
 | 9. CI/CD | Partial | GitHub Actions runs install/typecheck/lint/test/build/synth | GitHub OIDC Workload Identity Federation and main-only build/push/deploy workflow |
 | 10. Test coverage | Partial | Vitest and Playwright configuration plus ingestion chunking unit tests | Database/worker unit tests, Playwright journeys, and running them in CI |
 
@@ -36,19 +36,20 @@ Overall completion is approximately **55–60%**: three roadmap steps are comple
 - `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
 - `npm run db:migrate` was run against local Podman PostgreSQL: `20260728100000_initial_schema.sql` is applied, with zero pending migrations.
 - `npm run infra:synth` successfully generated the `docent-dev` Terraform stack.
-- `npm run ingestion:worker` runs against local PostgreSQL and cleanly reports pending-job results; local Application Default Credentials still need to be configured before GCS/Vertex processing can run.
+- `npm run ingestion:worker` runs against local PostgreSQL and cleanly reports pending-job results; local Application Default Credentials are configured for GCS/Vertex processing.
+- The `docent-dev` GCP bootstrap and Cloud Run service are deployed. Cloud Run, Storage, and Vertex use `europe-north1`; the `docent-ingestion` Cloud Tasks queue uses `europe-west1`, because Cloud Tasks does not support `europe-north1`.
 
 ## Recommended continuation order
 
-1. Run `gcloud auth application-default login`, then validate one local upload/indexing cycle against the dev GCS bucket and Vertex AI.
-2. Add integration coverage for page/file indexing, then wire the Cloud Run IAM and task service account in CDKTF.
-3. Add streaming to the Mastra chat flow.
-4. Wire Cloud Run IAM, task identity, and secret mounts in CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
-5. Add Vitest and Playwright tests, run all checks, and update this file as each roadmap step becomes complete.
+1. Register the deployed Cloud Run Google OAuth callback, then verify production sign-in.
+2. Set the local GCS bucket value and validate one local upload/indexing cycle against the dev GCS bucket and Vertex AI.
+3. Add integration coverage for page/file indexing and retry/status UI.
+4. Add streaming to the Mastra chat flow.
+5. Configure remote Terraform state, budget alert, and GitHub OIDC deployment, then expand Vitest and Playwright coverage.
 
 ## Important configuration
 
 - `EDITOR_EMAILS` defaults to `kaisellgren@gmail.com`; all signed-in Google users should remain viewers.
 - Production PostgreSQL is Neon. Store its connection URL in the `docent-neon-url` Secret Manager secret; local PostgreSQL is Podman.
 - Uploads are PDF, DOCX, and ODT only, maximum 5 MiB.
-- The sole GCP environment is `dev` in `europe-north1`; retain Cloud Run's provided URL and do not add CDN, WAF, custom DNS, or Cloud SQL.
+- The sole GCP environment is `dev`: Cloud Run, Storage, and Vertex are in `europe-north1`; Cloud Tasks is in its nearest supported region, `europe-west1`. Retain Cloud Run's provided URL and do not add CDN, WAF, custom DNS, or Cloud SQL.
