@@ -9,6 +9,9 @@ class DocentDev extends TerraformStack {
     if (!project) throw new Error('GOOGLE_CLOUD_PROJECT is required to synthesize the Docent dev stack');
     const region = 'europe-north1';
     const tasksRegion = 'europe-west1';
+    // Cloud Run resolves Secret Manager's `latest` when a container starts. Bump this
+    // marker after rotating an OAuth secret to roll a fresh revision deliberately.
+    const oauthSecretRollout = process.env.DOCENT_OAUTH_SECRET_ROLLOUT ?? '1';
     new google.provider.GoogleProvider(this, 'google', { project, region });
     new GcsBackend(this, { bucket: 'docent-terraform', prefix: 'docent/dev' });
 
@@ -123,6 +126,7 @@ class DocentDev extends TerraformStack {
             { name: 'DATABASE_URL', valueSource: { secretKeyRef: { secret: 'docent-neon-url', version: 'latest' } } },
             { name: 'GOOGLE_CLIENT_ID', valueSource: { secretKeyRef: { secret: 'docent-google-client-id', version: 'latest' } } },
             { name: 'GOOGLE_CLIENT_SECRET', valueSource: { secretKeyRef: { secret: 'docent-google-client-secret', version: 'latest' } } },
+            { name: 'DOCENT_OAUTH_SECRET_ROLLOUT', value: oauthSecretRollout },
             { name: 'SESSION_SECRET', valueSource: { secretKeyRef: { secret: 'docent-session-secret', version: 'latest' } } },
             ...(process.env.DOCENT_APP_URL ? [
               { name: 'APP_URL', value: process.env.DOCENT_APP_URL },

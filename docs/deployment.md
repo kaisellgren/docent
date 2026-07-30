@@ -8,6 +8,8 @@ Push the image to the generated Artifact Registry repository and add the Neon UR
 
 Finally, update the service with its real URL and queue target: `DOCENT_APP_URL=<Cloud Run URL> npm run infra:deploy -- --auto-approve`. This enables the correct production OAuth callback and Cloud Tasks configuration. GitHub deployment should use Workload Identity Federation and deploy only from `main`; no CDN, WAF, custom DNS, or Cloud SQL is provisioned.
 
+After creating a new Google OAuth secret version, increment `DOCENT_OAUTH_SECRET_ROLLOUT` and deploy. This rolls a Cloud Run revision, which is when the `latest` secret value is read by the container.
+
 ## Local cloud-backed testing
 
 Local development uses Podman PostgreSQL and can use the single `dev` GCP project's Vertex AI and Cloud Storage bucket. Authenticate Application Default Credentials with `gcloud auth application-default login`, then set `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GCS_BUCKET` in `.env`.
