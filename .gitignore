@@ -8,3 +8,4 @@ cdktf.out/
 .env
 .env.*
 !.env.example
+.tanstack/

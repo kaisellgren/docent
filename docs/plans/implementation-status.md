@@ -1,17 +1,17 @@
 # Docent implementation status
 
-Updated: 2026-07-28
+Updated: 2026-07-30
 
 ## Honest roadmap progress
 
-Overall completion is approximately **35–40%**: two roadmap steps are complete, seven are partial, and one has not started.
+Overall completion is approximately **40–45%**: two roadmap steps are complete, seven are partial, and one has not started.
 
 | Roadmap step | Status | What exists | What remains |
 | --- | --- | --- | --- |
 | 1. Foundation | Complete | Node 26 / TypeScript 7 scaffold, Podman Compose PostgreSQL+pgvector, dbmate config, roadmap, Vite/TanStack configuration | Verify Podman on a host where Podman is available |
-| 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations | Run migration against local PostgreSQL and Neon |
-| 3. Auth | Partial | Google OAuth/session functions and deploy-time `EDITOR_EMAILS` role checks | Restore functional OAuth start/callback/logout routes; current UI links to `/auth/google`, but API routes were removed during framework compatibility work |
-| 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow | Revision history, restore workflow, better errors, page attachment UI |
+| 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations; migration applied to local PostgreSQL | Run migration against Neon when its connection URL is provisioned |
+| 3. Auth | Partial | Google OAuth start/callback/logout server routes, signed sessions, and deploy-time `EDITOR_EMAILS` role checks | Create local OAuth credentials and register the Vite callback URL; verify a real Google sign-in |
+| 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, and restore-as-new-revision | Better mutation errors and page attachment UI |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema and basic UI | Nested folder UX, move/delete/download, page attachment UI, list tags |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence | Cloud Tasks enqueue, authenticated worker endpoint, retry action/status UI, integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Vertex answer generation, citations that link to pages | Streaming, new/resume conversation UI, robust citations, make Mastra drive the agent rather than only initializing it |
@@ -33,19 +33,19 @@ Overall completion is approximately **35–40%**: two roadmap steps are complete
 ## Current verification state
 
 - `npm install` completes, with existing transitive Mastra peer-dependency warnings and npm audit findings.
-- `npm run build` and `npm run typecheck` passed before the final infrastructure commit.
+- `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
+- `npm run db:migrate` was run against local Podman PostgreSQL: `20260728100000_initial_schema.sql` is applied, with zero pending migrations.
 - CDKTF has **not** been synthesized successfully after `infra/main.ts` was adjusted to the current provider namespace API.
 - Podman could not run in the prior sandbox due its runtime directory being read-only; this is environmental, not a project configuration result.
 
 ## Recommended continuation order
 
-1. Repair OAuth routes using the currently installed TanStack Start API pattern, then test sign-in locally.
-2. Run local PostgreSQL through Podman and apply `dbmate up`; add a seeded editor/user fixture.
-3. Complete page revision restore and file-library management/attachment flows.
-4. Implement the Cloud Tasks producer plus authenticated Cloud Run ingestion endpoint; integration-test page and file indexing.
-5. Replace the direct Vertex chat call with a real Mastra agent setup and add streaming/history UI.
-6. Finish and synthesize CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
-7. Add Vitest and Playwright tests, run all checks, and update this file as each roadmap step becomes complete.
+1. Create local Google OAuth credentials, set them in `.env`, register `http://localhost:5173/auth/google/callback`, and test sign-in locally.
+2. Complete file-library management and page attachment flows.
+3. Implement the Cloud Tasks producer plus authenticated Cloud Run ingestion endpoint; integration-test page and file indexing.
+4. Replace the direct Vertex chat call with a real Mastra agent setup and add streaming/history UI.
+5. Finish and synthesize CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
+6. Add Vitest and Playwright tests, run all checks, and update this file as each roadmap step becomes complete.
 
 ## Important configuration
 
