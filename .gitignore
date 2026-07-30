@@ -5,6 +5,7 @@ coverage/
 playwright-report/
 test-results/
 cdktf.out/
+terraform.*.tfstate
 .env
 .env.*
 !.env.example
