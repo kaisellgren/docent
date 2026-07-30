@@ -8,7 +8,7 @@ import * as styles from '@/styles/app.css';
 
 const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession());
 
-export const Route = createFileRoute('/wiki/')({
+export const Route = createFileRoute('/spaces/')({
   loader: async () => {
     const viewer = await getViewer();
     return { viewer, spaces: viewer ? await getSpaces() : [] };
@@ -44,9 +44,9 @@ function SpacesIndex() {
     <header className={styles.spacesNav}>
       <Link className={styles.spacesBrand} to="/"><DocentMark />Docent</Link>
       <nav className={styles.spacesNavLinks} aria-label="Primary navigation">
-        <Link className={styles.spacesNavActive} to="/wiki">Spaces</Link>
+        <Link className={styles.spacesNavActive} to="/spaces">Spaces</Link>
         <Link className={styles.spacesNavLink} to="/files">Files</Link>
-        {viewer?.isEditor && <Link className={styles.spacesNavLink} to="/wiki/new" search={{ spaceId: '' }}>Create page</Link>}
+        {viewer?.isEditor && <Link className={styles.spacesNavLink} to="/spaces/new" search={{ spaceId: '' }}>Create page</Link>}
       </nav>
       <div className={styles.spacesNavRight}>{viewer ? <><span className={styles.muted}>{viewer.name}</span><form action="/auth/logout" method="post"><button className={styles.secondaryButton}>Sign out</button></form></> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</div>
     </header>
@@ -60,7 +60,7 @@ function SpacesIndex() {
       </section>
       {creating && <form className={styles.spaceCreateForm} onSubmit={submit}><input className={styles.spacesFormInput} value={name} onChange={(event) => setName(event.target.value)} placeholder="Space name" required autoFocus /><input className={styles.spacesFormInput} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs in this space?" required /><button className={styles.primaryButton}>Create space</button><button type="button" className={styles.secondaryButton} onClick={() => setCreating(false)}>Cancel</button>{error && <p className={styles.feedbackError} role="alert">{error}</p>}</form>}
       <div className={styles.spacesFilterRow}><span className={styles.spacesCount}>All spaces ({filteredSpaces.length})</span><div className={styles.spacesViewToggle}><button type="button" className={!listView ? styles.spacesViewActive : styles.spacesViewButton} onClick={() => setListView(false)} aria-label="Grid view"><Grid2X2 size={14} /></button><button type="button" className={listView ? styles.spacesViewActive : styles.spacesViewButton} onClick={() => setListView(true)} aria-label="List view"><List size={14} /></button></div></div>
-      {spaces.length === 0 ? <section className={styles.emptySpaces}><h2>No spaces yet</h2><p>Create a space to organize pages and their parent-child hierarchy.</p>{viewer.isEditor && <button className={styles.primaryButton} onClick={() => setCreating(true)}>Create the first space</button>}</section> : <><div className={`${styles.spacesGrid} ${listView ? styles.spacesGridList : ''}`}>{filteredSpaces.map((space, index) => <Link className={styles.spaceCard} key={space.id} to="/wiki/space/$slug" params={{ slug: space.slug }}><div className={styles.spaceCardTop}><span className={styles.spaceIcon}>{SPACE_ICONS[index % SPACE_ICONS.length]}</span><span className={styles.spaceKey}>{space.slug.slice(0, 3).toUpperCase()}</span></div><h2>{space.name}</h2><p>{space.description}</p><div className={styles.spaceCardFoot}><span>{space.pageCount} {space.pageCount === 1 ? 'page' : 'pages'}</span><span>updated {relativeTime(space.updatedAt)}</span></div></Link>)}</div>{filteredSpaces.length === 0 && <p className={styles.muted}>No spaces match “{query}”.</p>}</>}
+      {spaces.length === 0 ? <section className={styles.emptySpaces}><h2>No spaces yet</h2><p>Create a space to organize pages and their parent-child hierarchy.</p>{viewer.isEditor && <button className={styles.primaryButton} onClick={() => setCreating(true)}>Create the first space</button>}</section> : <><div className={`${styles.spacesGrid} ${listView ? styles.spacesGridList : ''}`}>{filteredSpaces.map((space, index) => <Link className={styles.spaceCard} key={space.id} to="/spaces/space/$slug" params={{ slug: space.slug }}><div className={styles.spaceCardTop}><span className={styles.spaceIcon}>{SPACE_ICONS[index % SPACE_ICONS.length]}</span><span className={styles.spaceKey}>{space.slug.slice(0, 3).toUpperCase()}</span></div><h2>{space.name}</h2><p>{space.description}</p><div className={styles.spaceCardFoot}><span>{space.pageCount} {space.pageCount === 1 ? 'page' : 'pages'}</span><span>updated {relativeTime(space.updatedAt)}</span></div></Link>)}</div>{filteredSpaces.length === 0 && <p className={styles.muted}>No spaces match “{query}”.</p>}</>}
     </>}
   </div>;
 }

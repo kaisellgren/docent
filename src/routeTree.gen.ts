@@ -15,11 +15,11 @@ import { Route as ApiIngestionRouteImport } from './routes/api/ingestion'
 import { Route as AuthGoogleRouteImport } from './routes/auth/google'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as FilesIndexRouteImport } from './routes/files/index'
-import { Route as WikiIndexRouteImport } from './routes/wiki/index'
-import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
-import { Route as WikiNewRouteImport } from './routes/wiki/new'
+import { Route as SpacesIndexRouteImport } from './routes/spaces/index'
+import { Route as SpacesSlugRouteImport } from './routes/spaces/$slug'
+import { Route as SpacesNewRouteImport } from './routes/spaces/new'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/callback'
-import { Route as WikiSpaceSlugRouteImport } from './routes/wiki/space/$slug'
+import { Route as SpacesSpaceSlugRouteImport } from './routes/spaces/space/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,19 +51,19 @@ const FilesIndexRoute = FilesIndexRouteImport.update({
   path: '/files/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WikiIndexRoute = WikiIndexRouteImport.update({
-  id: '/wiki/',
-  path: '/wiki/',
+const SpacesIndexRoute = SpacesIndexRouteImport.update({
+  id: '/spaces/',
+  path: '/spaces/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WikiSlugRoute = WikiSlugRouteImport.update({
-  id: '/wiki/$slug',
-  path: '/wiki/$slug',
+const SpacesSlugRoute = SpacesSlugRouteImport.update({
+  id: '/spaces/$slug',
+  path: '/spaces/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WikiNewRoute = WikiNewRouteImport.update({
-  id: '/wiki/new',
-  path: '/wiki/new',
+const SpacesNewRoute = SpacesNewRouteImport.update({
+  id: '/spaces/new',
+  path: '/spaces/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
@@ -71,9 +71,9 @@ const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthGoogleRoute,
 } as any)
-const WikiSpaceSlugRoute = WikiSpaceSlugRouteImport.update({
-  id: '/wiki/space/$slug',
-  path: '/wiki/space/$slug',
+const SpacesSpaceSlugRoute = SpacesSpaceSlugRouteImport.update({
+  id: '/spaces/space/$slug',
+  path: '/spaces/space/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -83,12 +83,12 @@ export interface FileRoutesByFullPath {
   '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
-  '/wiki/$slug': typeof WikiSlugRoute
-  '/wiki/new': typeof WikiNewRoute
+  '/spaces/$slug': typeof SpacesSlugRoute
+  '/spaces/new': typeof SpacesNewRoute
   '/files/': typeof FilesIndexRoute
-  '/wiki/': typeof WikiIndexRoute
+  '/spaces/': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
-  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
+  '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -96,12 +96,12 @@ export interface FileRoutesByTo {
   '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
-  '/wiki/$slug': typeof WikiSlugRoute
-  '/wiki/new': typeof WikiNewRoute
+  '/spaces/$slug': typeof SpacesSlugRoute
+  '/spaces/new': typeof SpacesNewRoute
   '/files': typeof FilesIndexRoute
-  '/wiki': typeof WikiIndexRoute
+  '/spaces': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
-  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
+  '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -110,12 +110,12 @@ export interface FileRoutesById {
   '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
-  '/wiki/$slug': typeof WikiSlugRoute
-  '/wiki/new': typeof WikiNewRoute
+  '/spaces/$slug': typeof SpacesSlugRoute
+  '/spaces/new': typeof SpacesNewRoute
   '/files/': typeof FilesIndexRoute
-  '/wiki/': typeof WikiIndexRoute
+  '/spaces/': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
-  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
+  '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,12 +125,12 @@ export interface FileRouteTypes {
     | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
-    | '/wiki/$slug'
-    | '/wiki/new'
+    | '/spaces/$slug'
+    | '/spaces/new'
     | '/files/'
-    | '/wiki/'
+    | '/spaces/'
     | '/auth/google/callback'
-    | '/wiki/space/$slug'
+    | '/spaces/space/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -138,12 +138,12 @@ export interface FileRouteTypes {
     | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
-    | '/wiki/$slug'
-    | '/wiki/new'
+    | '/spaces/$slug'
+    | '/spaces/new'
     | '/files'
-    | '/wiki'
+    | '/spaces'
     | '/auth/google/callback'
-    | '/wiki/space/$slug'
+    | '/spaces/space/$slug'
   id:
     | '__root__'
     | '/'
@@ -151,12 +151,12 @@ export interface FileRouteTypes {
     | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
-    | '/wiki/$slug'
-    | '/wiki/new'
+    | '/spaces/$slug'
+    | '/spaces/new'
     | '/files/'
-    | '/wiki/'
+    | '/spaces/'
     | '/auth/google/callback'
-    | '/wiki/space/$slug'
+    | '/spaces/space/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,11 +165,11 @@ export interface RootRouteChildren {
   ApiIngestionRoute: typeof ApiIngestionRoute
   AuthGoogleRoute: typeof AuthGoogleRouteWithChildren
   AuthLogoutRoute: typeof AuthLogoutRoute
-  WikiSlugRoute: typeof WikiSlugRoute
-  WikiNewRoute: typeof WikiNewRoute
+  SpacesSlugRoute: typeof SpacesSlugRoute
+  SpacesNewRoute: typeof SpacesNewRoute
   FilesIndexRoute: typeof FilesIndexRoute
-  WikiIndexRoute: typeof WikiIndexRoute
-  WikiSpaceSlugRoute: typeof WikiSpaceSlugRoute
+  SpacesIndexRoute: typeof SpacesIndexRoute
+  SpacesSpaceSlugRoute: typeof SpacesSpaceSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -216,25 +216,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FilesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wiki/': {
-      id: '/wiki/'
-      path: '/wiki'
-      fullPath: '/wiki/'
-      preLoaderRoute: typeof WikiIndexRouteImport
+    '/spaces/': {
+      id: '/spaces/'
+      path: '/spaces'
+      fullPath: '/spaces/'
+      preLoaderRoute: typeof SpacesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wiki/$slug': {
-      id: '/wiki/$slug'
-      path: '/wiki/$slug'
-      fullPath: '/wiki/$slug'
-      preLoaderRoute: typeof WikiSlugRouteImport
+    '/spaces/$slug': {
+      id: '/spaces/$slug'
+      path: '/spaces/$slug'
+      fullPath: '/spaces/$slug'
+      preLoaderRoute: typeof SpacesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wiki/new': {
-      id: '/wiki/new'
-      path: '/wiki/new'
-      fullPath: '/wiki/new'
-      preLoaderRoute: typeof WikiNewRouteImport
+    '/spaces/new': {
+      id: '/spaces/new'
+      path: '/spaces/new'
+      fullPath: '/spaces/new'
+      preLoaderRoute: typeof SpacesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/google/callback': {
@@ -244,11 +244,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGoogleCallbackRouteImport
       parentRoute: typeof AuthGoogleRoute
     }
-    '/wiki/space/$slug': {
-      id: '/wiki/space/$slug'
-      path: '/wiki/space/$slug'
-      fullPath: '/wiki/space/$slug'
-      preLoaderRoute: typeof WikiSpaceSlugRouteImport
+    '/spaces/space/$slug': {
+      id: '/spaces/space/$slug'
+      path: '/spaces/space/$slug'
+      fullPath: '/spaces/space/$slug'
+      preLoaderRoute: typeof SpacesSpaceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -272,11 +272,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiIngestionRoute: ApiIngestionRoute,
   AuthGoogleRoute: AuthGoogleRouteWithChildren,
   AuthLogoutRoute: AuthLogoutRoute,
-  WikiSlugRoute: WikiSlugRoute,
-  WikiNewRoute: WikiNewRoute,
+  SpacesSlugRoute: SpacesSlugRoute,
+  SpacesNewRoute: SpacesNewRoute,
   FilesIndexRoute: FilesIndexRoute,
-  WikiIndexRoute: WikiIndexRoute,
-  WikiSpaceSlugRoute: WikiSpaceSlugRoute,
+  SpacesIndexRoute: SpacesIndexRoute,
+  SpacesSpaceSlugRoute: SpacesSpaceSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

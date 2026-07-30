@@ -23,7 +23,7 @@ function HomePage() {
   return <div className={styles.shell}>
     <header className={styles.homeNav}>
       <Link className={styles.homeBrand} to="/"><DocentMark />Docent</Link>
-      <nav className={styles.homeNavLinks} aria-label="Primary navigation"><Link className={styles.homeNavLink} to="/wiki">Spaces</Link><Link className={styles.homeNavLink} to="/files">Files</Link>{viewer?.isEditor && <Link className={styles.homeNavLink} to="/wiki/new" search={{ spaceId: '' }}>Create page</Link>}</nav>
+      <nav className={styles.homeNavLinks} aria-label="Primary navigation"><Link className={styles.homeNavLink} to="/spaces">Spaces</Link><Link className={styles.homeNavLink} to="/files">Files</Link>{viewer?.isEditor && <Link className={styles.homeNavLink} to="/spaces/new" search={{ spaceId: '' }}>Create page</Link>}</nav>
       <div className={styles.homeNavRight}>{viewer ? <><span className={styles.muted}>{viewer.name} · {viewer.isEditor ? 'Editor' : 'Viewer'}</span><form action="/auth/logout" method="post"><button className={styles.secondaryButton}>Sign out</button></form></> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</div>
     </header>
     <section className={styles.hero}>
@@ -35,7 +35,7 @@ function HomePage() {
         {viewer ? <div className={styles.homeConsole}><div className={styles.homeConsoleRow}><Search size={18} color="#64828c" aria-hidden="true" /><input className={styles.homeConsoleInput} value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && navigateToChat()} placeholder="Ask about a policy, a project, or who owns what…" aria-label="Ask Docent" /><button className={styles.homeSendButton} onClick={navigateToChat} aria-label="Ask Docent"><Send size={17} /></button></div></div> : <a className={styles.primaryButton} href="/auth/google">Sign in to ask Docent</a>}
       </div>
     </section>
-    {viewer && <section className={styles.section}><h2>Recently updated</h2><div className={styles.grid}>{pages.map((page) => <Link key={page.id} className={styles.card + ' ' + styles.link} to="/wiki/$slug" params={{ slug: page.slug }}><strong>{page.title}</strong><p className={styles.muted}>{page.author} · {new Date(page.updatedAt).toLocaleDateString()}</p></Link>)}</div></section>}
+    {viewer && <section className={styles.section}><h2>Recently updated</h2><div className={styles.grid}>{pages.map((page) => <Link key={page.id} className={styles.card + ' ' + styles.link} to="/spaces/$slug" params={{ slug: page.slug }}><strong>{page.title}</strong><p className={styles.muted}>{page.author} · {new Date(page.updatedAt).toLocaleDateString()}</p></Link>)}</div></section>}
   </div>;
 }
 
