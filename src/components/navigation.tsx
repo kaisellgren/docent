@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Search, Sun } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import * as styles from "@/styles/app.css";
 
@@ -32,9 +32,6 @@ export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationPr
           <Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces">
             <Search size={16} />
           </Link>
-          <button type="button" className={styles.pageIconButton} aria-label="Theme">
-            <Sun size={15} />
-          </button>
           {viewer ? (
             <AvatarMenu viewer={viewer} />
           ) : (
