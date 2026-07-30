@@ -18,6 +18,7 @@ const envSchema = z.object({
   VERTEX_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
   GCS_BUCKET: optionalString,
   CLOUD_TASKS_QUEUE: optionalString,
+  CLOUD_TASKS_LOCATION: z.string().default('europe-west1'),
   CLOUD_RUN_TASK_URL: optionalUrl,
   CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL: optionalEmail,
   CLOUD_RUN_TASK_AUDIENCE: optionalUrl,

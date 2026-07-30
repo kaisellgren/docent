@@ -8,6 +8,7 @@ class DocentDev extends TerraformStack {
     const project = process.env.GOOGLE_CLOUD_PROJECT;
     if (!project) throw new Error('GOOGLE_CLOUD_PROJECT is required to synthesize the Docent dev stack');
     const region = 'europe-north1';
+    const tasksRegion = 'europe-west1';
     new google.provider.GoogleProvider(this, 'google', { project, region });
 
     const enabledServices = new Map<string, google.projectService.ProjectService>();
@@ -49,7 +50,7 @@ class DocentDev extends TerraformStack {
     });
     const queue = new google.cloudTasksQueue.CloudTasksQueue(this, 'ingestion', {
       name: 'docent-ingestion',
-      location: region,
+      location: tasksRegion,
       retryConfig: { maxAttempts: 5, minBackoff: '5s', maxBackoff: '300s', maxDoublings: 5 },
       rateLimits: { maxConcurrentDispatches: 2, maxDispatchesPerSecond: 1 },
       dependsOn: [enabledServices.get('cloudtasks.googleapis.com')!],
@@ -75,7 +76,7 @@ class DocentDev extends TerraformStack {
     });
     new google.cloudTasksQueueIamMember.CloudTasksQueueIamMember(this, 'app-enqueue', {
       name: queue.name,
-      location: region,
+      location: tasksRegion,
       role: 'roles/cloudtasks.enqueuer',
       member: `serviceAccount:${appAccount.email}`,
       dependsOn: [queue],

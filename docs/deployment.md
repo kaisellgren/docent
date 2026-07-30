@@ -1,6 +1,6 @@
 # Dev deployment
 
-Set `GOOGLE_CLOUD_PROJECT`, then run `npm run infra:deploy -- --auto-approve` to create the bootstrap resources: APIs, bucket, registry, queue, service accounts, IAM bindings, and empty secrets. This first phase intentionally does not create Cloud Run because it needs an image and secret versions.
+Set `GOOGLE_CLOUD_PROJECT`, then run `npm run infra:deploy -- --auto-approve` to create the bootstrap resources: APIs, bucket, registry, queue, service accounts, IAM bindings, and empty secrets. This first phase intentionally does not create Cloud Run because it needs an image and secret versions. Cloud Run, Storage, and Vertex use `europe-north1`; Cloud Tasks uses `europe-west1`, the nearest supported queue region.
 
 Push the image to the generated Artifact Registry repository and add the Neon URL, Google OAuth client ID/secret, and 32+ character session secret as Secret Manager versions. Then run `DOCENT_DEPLOY_WEB=true npm run infra:deploy -- --auto-approve` to create Cloud Run. Register `${Cloud Run URL}/auth/google/callback` in Google OAuth. GitHub deployment should use Workload Identity Federation and deploy only from `main`; no CDN, WAF, custom DNS, or Cloud SQL is provisioned.
 
