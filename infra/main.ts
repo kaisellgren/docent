@@ -1,4 +1,4 @@
-import { App, TerraformOutput, TerraformStack } from 'cdktf';
+import { App, GcsBackend, TerraformOutput, TerraformStack } from 'cdktf';
 import { Construct } from 'constructs';
 import * as google from '@cdktf/provider-google';
 
@@ -10,6 +10,7 @@ class DocentDev extends TerraformStack {
     const region = 'europe-north1';
     const tasksRegion = 'europe-west1';
     new google.provider.GoogleProvider(this, 'google', { project, region });
+    new GcsBackend(this, { bucket: 'docent-terraform', prefix: 'docent/dev' });
 
     const enabledServices = new Map<string, google.projectService.ProjectService>();
     for (const service of [
