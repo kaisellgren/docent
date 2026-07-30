@@ -8,7 +8,8 @@ import { getDocentAgent } from '@/mastra';
 
 const sourceSchema = z.object({ id: z.string().uuid(), text: z.string(), pageSlug: z.string().nullable(), pageTitle: z.string().nullable(), filename: z.string().nullable() });
 const conversationSchema = z.object({ id: z.string().uuid(), title: z.string(), updatedAt: z.string() });
-const conversationMessageSchema = z.object({ id: z.string().uuid(), role: z.enum(['user', 'assistant']), content: z.string(), createdAt: z.string() });
+const citationSchema = z.object({ number: z.number().int().positive(), title: z.string(), slug: z.string().nullable(), excerpt: z.string() });
+const conversationMessageSchema = z.object({ id: z.string().uuid(), role: z.enum(['user', 'assistant']), content: z.string(), createdAt: z.string(), citations: z.array(citationSchema) });
 const conversationIdSchema = z.object({ conversationId: z.string().uuid() });
 
 export const getConversations = createServerFn({ method: 'GET' }).handler(async () => {
@@ -29,8 +30,21 @@ export const getConversationMessages = createServerFn({ method: 'GET' })
     `);
     if (!conversation) throw new Response('Conversation not found', { status: 404 });
     return (await db()).any(sql.type(conversationMessageSchema)`
-      SELECT id, role, content, created_at::text AS "createdAt" FROM chat_message
-      WHERE conversation_id = ${conversation.id} ORDER BY created_at ASC
+      SELECT m.id, m.role, m.content, m.created_at::text AS "createdAt",
+        COALESCE(jsonb_agg(jsonb_build_object(
+          'number', c.ordinal + 1,
+          'title', COALESCE(p.title, f.original_filename, 'Source'),
+          'slug', p.slug,
+          'excerpt', c.excerpt
+        ) ORDER BY c.ordinal) FILTER (WHERE c.id IS NOT NULL), '[]'::jsonb) AS citations
+      FROM chat_message m
+      LEFT JOIN message_citation c ON c.message_id = m.id
+      LEFT JOIN content_chunk chunk ON chunk.id = c.content_chunk_id
+      LEFT JOIN wiki_page p ON p.id = chunk.page_id
+      LEFT JOIN stored_file f ON f.id = chunk.file_id
+      WHERE m.conversation_id = ${conversation.id}
+      GROUP BY m.id
+      ORDER BY m.created_at ASC
     `);
   });
 
