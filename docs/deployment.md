@@ -10,6 +10,22 @@ Finally, update the service with its real URL and queue target: `DOCENT_APP_URL=
 
 After creating a new Google OAuth secret version, increment `DOCENT_OAUTH_SECRET_ROLLOUT` and deploy. This rolls a Cloud Run revision, which is when the `latest` secret value is read by the container.
 
+## GitHub Actions deployment
+
+`.github/workflows/deploy.yml` runs only for `main` (or manually from `main`), verifies the project, applies CDKTF, migrates Neon, builds and pushes an immutable image, and rolls the Cloud Run revision. It authenticates with the deployed GitHub Workload Identity Federation provider; no GCP service-account key is stored in GitHub.
+
+Before the first run, add these repository variables:
+
+| Variable | Value |
+| --- | --- |
+| `GCP_PROJECT_ID` | `docent-504016` |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/374228818470/locations/global/workloadIdentityPools/docent-github/providers/github` |
+| `GCP_DEPLOYER_SERVICE_ACCOUNT` | `docent-github-deployer@docent-504016.iam.gserviceaccount.com` |
+| `DOCENT_APP_URL` | `https://docent-dev-mslclny3pa-lz.a.run.app` |
+| `DOCENT_OAUTH_SECRET_ROLLOUT` | `2` (increment whenever an OAuth secret is rotated) |
+
+Add the full Neon connection URL as the repository secret `NEON_DATABASE_URL`. Do not add the OAuth or application secrets to GitHub: Cloud Run reads those directly from Secret Manager.
+
 ## Local cloud-backed testing
 
 Local development uses Podman PostgreSQL and can use the single `dev` GCP project's Vertex AI and Cloud Storage bucket. Authenticate Application Default Credentials with `gcloud auth application-default login`, then set `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GCS_BUCKET` in `.env`.
