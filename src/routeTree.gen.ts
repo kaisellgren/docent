@@ -14,7 +14,6 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ApiIngestionRouteImport } from './routes/api/ingestion'
 import { Route as AuthGoogleRouteImport } from './routes/auth/google'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
-import { Route as FilesIndexRouteImport } from './routes/files/index'
 import { Route as SpacesIndexRouteImport } from './routes/spaces/index'
 import { Route as SpacesSlugRouteImport } from './routes/spaces/$slug'
 import { Route as SpacesNewRouteImport } from './routes/spaces/new'
@@ -44,11 +43,6 @@ const AuthGoogleRoute = AuthGoogleRouteImport.update({
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
   path: '/auth/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FilesIndexRoute = FilesIndexRouteImport.update({
-  id: '/files/',
-  path: '/files/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SpacesIndexRoute = SpacesIndexRouteImport.update({
@@ -85,7 +79,6 @@ export interface FileRoutesByFullPath {
   '/auth/logout': typeof AuthLogoutRoute
   '/spaces/$slug': typeof SpacesSlugRoute
   '/spaces/new': typeof SpacesNewRoute
-  '/files/': typeof FilesIndexRoute
   '/spaces/': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
@@ -98,7 +91,6 @@ export interface FileRoutesByTo {
   '/auth/logout': typeof AuthLogoutRoute
   '/spaces/$slug': typeof SpacesSlugRoute
   '/spaces/new': typeof SpacesNewRoute
-  '/files': typeof FilesIndexRoute
   '/spaces': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
@@ -112,7 +104,6 @@ export interface FileRoutesById {
   '/auth/logout': typeof AuthLogoutRoute
   '/spaces/$slug': typeof SpacesSlugRoute
   '/spaces/new': typeof SpacesNewRoute
-  '/files/': typeof FilesIndexRoute
   '/spaces/': typeof SpacesIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/spaces/space/$slug': typeof SpacesSpaceSlugRoute
@@ -127,7 +118,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/spaces/$slug'
     | '/spaces/new'
-    | '/files/'
     | '/spaces/'
     | '/auth/google/callback'
     | '/spaces/space/$slug'
@@ -140,7 +130,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/spaces/$slug'
     | '/spaces/new'
-    | '/files'
     | '/spaces'
     | '/auth/google/callback'
     | '/spaces/space/$slug'
@@ -153,7 +142,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/spaces/$slug'
     | '/spaces/new'
-    | '/files/'
     | '/spaces/'
     | '/auth/google/callback'
     | '/spaces/space/$slug'
@@ -167,7 +155,6 @@ export interface RootRouteChildren {
   AuthLogoutRoute: typeof AuthLogoutRoute
   SpacesSlugRoute: typeof SpacesSlugRoute
   SpacesNewRoute: typeof SpacesNewRoute
-  FilesIndexRoute: typeof FilesIndexRoute
   SpacesIndexRoute: typeof SpacesIndexRoute
   SpacesSpaceSlugRoute: typeof SpacesSpaceSlugRoute
 }
@@ -207,13 +194,6 @@ declare module '@tanstack/react-router' {
       path: '/auth/logout'
       fullPath: '/auth/logout'
       preLoaderRoute: typeof AuthLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/files/': {
-      id: '/files/'
-      path: '/files'
-      fullPath: '/files/'
-      preLoaderRoute: typeof FilesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/spaces/': {
@@ -274,7 +254,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLogoutRoute: AuthLogoutRoute,
   SpacesSlugRoute: SpacesSlugRoute,
   SpacesNewRoute: SpacesNewRoute,
-  FilesIndexRoute: FilesIndexRoute,
   SpacesIndexRoute: SpacesIndexRoute,
   SpacesSpaceSlugRoute: SpacesSpaceSlugRoute,
 }

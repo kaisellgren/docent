@@ -23,7 +23,7 @@ function HomePage() {
   return <div className={styles.shell}>
     <header className={styles.homeNav}>
       <Link className={styles.homeBrand} to="/"><DocentMark />Docent</Link>
-      <nav className={styles.homeNavLinks} aria-label="Primary navigation"><Link className={styles.homeNavLink} to="/spaces">Spaces</Link><Link className={styles.homeNavLink} to="/files">Files</Link>{viewer?.isEditor && <Link className={styles.homeNavLink} to="/spaces/new" search={{ spaceId: '' }}>Create page</Link>}</nav>
+      <nav className={styles.homeNavLinks} aria-label="Primary navigation"><Link className={styles.homeNavLink} to="/spaces">Spaces</Link>{viewer?.isEditor && <Link className={styles.homeNavLink} to="/spaces/new" search={{ spaceId: '' }}>Create page</Link>}</nav>
       <div className={styles.homeNavRight}>{viewer ? <><span className={styles.muted}>{viewer.name} · {viewer.isEditor ? 'Editor' : 'Viewer'}</span><form action="/auth/logout" method="post"><button className={styles.secondaryButton}>Sign out</button></form></> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</div>
     </header>
     <section className={styles.hero}>

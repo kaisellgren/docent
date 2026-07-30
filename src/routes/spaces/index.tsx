@@ -45,7 +45,6 @@ function SpacesIndex() {
       <Link className={styles.spacesBrand} to="/"><DocentMark />Docent</Link>
       <nav className={styles.spacesNavLinks} aria-label="Primary navigation">
         <Link className={styles.spacesNavActive} to="/spaces">Spaces</Link>
-        <Link className={styles.spacesNavLink} to="/files">Files</Link>
         {viewer?.isEditor && <Link className={styles.spacesNavLink} to="/spaces/new" search={{ spaceId: '' }}>Create page</Link>}
       </nav>
       <div className={styles.spacesNavRight}>{viewer ? <><span className={styles.muted}>{viewer.name}</span><form action="/auth/logout" method="post"><button className={styles.secondaryButton}>Sign out</button></form></> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</div>

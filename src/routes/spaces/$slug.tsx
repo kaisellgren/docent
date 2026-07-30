@@ -4,7 +4,7 @@ import { useServerFn } from '@tanstack/react-start';
 import ReactMarkdown from 'react-markdown';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { deletePage, getPage, getPageRevisions, getSpacePages, restorePageRevision, updatePage } from '@/features/wiki/server';
-import { attachFileToPage, detachFileFromPage, getFiles, getPageAttachments } from '@/features/files/server';
+import { attachFileToPage, detachFileFromPage, getPageAttachments, getSpaceFiles } from '@/features/files/server';
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
 import * as styles from '@/styles/app.css';
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/spaces/$slug')({
     const [revisions, attachments, files, spacePages] = await Promise.all([
       getPageRevisions({ data: { slug: params.slug } }),
       getPageAttachments({ data: { pageId: page.id } }),
-      viewer.isEditor ? getFiles() : Promise.resolve([]),
+      viewer.isEditor ? getSpaceFiles({ data: { spaceId: page.spaceId } }) : Promise.resolve([]),
       getSpacePages({ data: { spaceId: page.spaceId } }),
     ]);
     return { page, viewer, revisions, attachments, files, spacePages };
