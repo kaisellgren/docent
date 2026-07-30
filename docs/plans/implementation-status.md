@@ -14,8 +14,8 @@ Overall completion is approximately **50–55%**: two roadmap steps are complete
 | 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, and restore-as-new-revision | Better mutation errors and page attachment UI |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, Cloud Tasks enqueueing, and authenticated worker endpoint | Cloud Run IAM/task-service-account wiring, retry action/status UI, integration tests |
-| 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, citations that link to pages, and new/resume history UI | Streaming and robust citations in resumed conversations |
-| 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, service account, Secret Manager placeholders; CDKTF synthesis succeeds | IAM; public Cloud Run invocation; secret-version env mounts; task target; container build; budget alert; WIF resources |
+| 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |
+| 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, service account, Secret Manager placeholders; CDKTF synthesis succeeds; runnable Cloud Run container image | IAM; public Cloud Run invocation; secret-version env mounts; task target; budget alert; WIF resources |
 | 9. CI/CD | Partial | GitHub Actions runs install/typecheck/lint/test/build/synth | GitHub OIDC Workload Identity Federation and main-only build/push/deploy workflow |
 | 10. Test coverage | Partial | Vitest and Playwright configuration plus ingestion chunking unit tests | Database/worker unit tests, Playwright journeys, and running them in CI |
 
@@ -42,8 +42,8 @@ Overall completion is approximately **50–55%**: two roadmap steps are complete
 
 1. Create local Google OAuth credentials, set them in `.env`, register `http://localhost:5173/auth/google/callback`, and test sign-in locally.
 2. Add integration coverage for page/file indexing, then wire the Cloud Run IAM and task service account in CDKTF.
-3. Add streaming and persisted citations to the Mastra chat flow.
-4. Finish and synthesize CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
+3. Add streaming to the Mastra chat flow.
+4. Wire Cloud Run IAM, task identity, and secret mounts in CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
 5. Add Vitest and Playwright tests, run all checks, and update this file as each roadmap step becomes complete.
 
 ## Important configuration
