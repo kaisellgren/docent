@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  APP_URL: z.string().url().default('http://localhost:3000'),
+  APP_URL: z.string().url().default('http://localhost:5173'),
   DATABASE_URL: z.string().url(),
   SESSION_SECRET: z.string().min(32),
   EDITOR_EMAILS: z.string().default('kaisellgren@gmail.com'),

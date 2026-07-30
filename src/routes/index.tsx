@@ -1,6 +1,6 @@
 import { Button } from '@base-ui/react/button';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { createServerFn, useServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
 import { BookOpen, MessageCircle, Send } from 'lucide-react';
 import { currentSession } from '@/server/auth';
@@ -10,7 +10,10 @@ import * as styles from '@/styles/app.css';
 const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession());
 
 export const Route = createFileRoute('/')({
-  loader: async () => ({ viewer: await getViewer(), pages: await getRecentPages() }),
+  loader: async () => {
+    const viewer = await getViewer();
+    return { viewer, pages: viewer ? await getRecentPages() : [] };
+  },
   component: HomePage,
 });
 
@@ -19,7 +22,7 @@ function HomePage() {
   const [question, setQuestion] = useState('');
   const navigateToChat = () => { if (question.trim()) window.location.assign(`/chat?q=${encodeURIComponent(question.trim())}`); };
   return <div className={styles.shell}>
-    <header className={styles.nav}><div className={styles.brand}><BookOpen size={24} /> Docent</div>{viewer ? <div className={styles.muted}>{viewer.name} · {viewer.isEditor ? 'Editor' : 'Viewer'}</div> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</header>
+    <header className={styles.nav}><div className={styles.brand}><BookOpen size={24} /> Docent</div>{viewer ? <div className={styles.muted}>{viewer.name} · {viewer.isEditor ? 'Editor' : 'Viewer'} <form style={{ display: 'inline' }} action="/auth/logout" method="post"><button className={styles.secondaryButton}>Sign out</button></form></div> : <a className={styles.secondaryButton} href="/auth/google">Sign in with Google</a>}</header>
     <section className={styles.hero}>
       <div className={styles.eyebrow}>Internal knowledge base</div>
       <h1 className={styles.headline}>Ask Docent anything.<br /><span className={styles.gradient}>It already knows.</span></h1>
