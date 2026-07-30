@@ -17,6 +17,7 @@ import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as FilesIndexRouteImport } from './routes/files/index'
 import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
+import { Route as WikiNewRouteImport } from './routes/wiki/new'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const WikiSlugRoute = WikiSlugRouteImport.update({
   path: '/wiki/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WikiNewRoute = WikiNewRouteImport.update({
+  id: '/wiki/new',
+  path: '/wiki/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/wiki/new': typeof WikiNewRoute
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/wiki/new': typeof WikiNewRoute
   '/files': typeof FilesIndexRoute
   '/wiki': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
+  '/wiki/new': typeof WikiNewRoute
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
+    | '/wiki/new'
     | '/files/'
     | '/wiki/'
     | '/auth/google/callback'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
+    | '/wiki/new'
     | '/files'
     | '/wiki'
     | '/auth/google/callback'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
+    | '/wiki/new'
     | '/files/'
     | '/wiki/'
     | '/auth/google/callback'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   AuthGoogleRoute: typeof AuthGoogleRouteWithChildren
   AuthLogoutRoute: typeof AuthLogoutRoute
   WikiSlugRoute: typeof WikiSlugRoute
+  WikiNewRoute: typeof WikiNewRoute
   FilesIndexRoute: typeof FilesIndexRoute
   WikiIndexRoute: typeof WikiIndexRoute
 }
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WikiSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wiki/new': {
+      id: '/wiki/new'
+      path: '/wiki/new'
+      fullPath: '/wiki/new'
+      preLoaderRoute: typeof WikiNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/google/callback': {
       id: '/auth/google/callback'
       path: '/callback'
@@ -233,6 +253,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthGoogleRoute: AuthGoogleRouteWithChildren,
   AuthLogoutRoute: AuthLogoutRoute,
   WikiSlugRoute: WikiSlugRoute,
+  WikiNewRoute: WikiNewRoute,
   FilesIndexRoute: FilesIndexRoute,
   WikiIndexRoute: WikiIndexRoute,
 }

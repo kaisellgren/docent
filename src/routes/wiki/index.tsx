@@ -1,7 +1,5 @@
-import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
-import { useServerFn } from '@tanstack/react-start';
-import { useState, type FormEvent } from 'react';
-import { createPage, getRecentPages } from '@/features/wiki/server';
+import { Link, createFileRoute } from '@tanstack/react-router';
+import { getRecentPages } from '@/features/wiki/server';
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
 import * as styles from '@/styles/app.css';
@@ -16,22 +14,6 @@ export const Route = createFileRoute('/wiki/')({
 });
 
 function WikiIndex() {
-  const { viewer, pages } = Route.useLoaderData(); const create = useServerFn(createPage); const router = useRouter(); const [title, setTitle] = useState(''); const [markdown, setMarkdown] = useState(''); const [error, setError] = useState(''); const [creating, setCreating] = useState(false);
-  async function submit(event: FormEvent) {
-    event.preventDefault(); setError(''); setCreating(true);
-    try {
-      const page = await create({ data: { title, markdown } });
-      await router.navigate({ to: '/wiki/$slug', params: { slug: page.slug } });
-    } catch (cause) {
-      setError(messageFor(cause, 'create this page'));
-    } finally {
-      setCreating(false);
-    }
-  }
-  return <div className={styles.shell}><header className={styles.nav}><Link className={styles.link} to="/">← Docent</Link><span className={styles.muted}>Wiki browser</span></header><section className={styles.section}><h1>Wiki pages</h1>{!viewer && <a className={styles.primaryButton} href="/auth/google">Sign in to browse the wiki</a>}{viewer?.isEditor && <form className={styles.card} onSubmit={submit}><h2>Create page</h2><input className={styles.chatInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" disabled={creating} required /><textarea className={styles.chatInput} value={markdown} onChange={(e) => setMarkdown(e.target.value)} placeholder="Markdown content" rows={8} disabled={creating} required />{error && <p className={styles.feedbackError} role="alert">{error}</p>}<button className={styles.primaryButton} disabled={creating}>{creating ? 'Creating…' : 'Create and index'}</button></form>}<div className={styles.grid}>{pages.map((page) => <Link className={styles.card + ' ' + styles.link} key={page.id} to="/wiki/$slug" params={{ slug: page.slug }}>{page.title}</Link>)}</div></section></div>;
-}
-
-function messageFor(cause: unknown, action: string) {
-  const detail = cause instanceof Error ? cause.message : '';
-  return detail ? `Unable to ${action}: ${detail}` : `Unable to ${action}. Please try again.`;
+  const { viewer, pages } = Route.useLoaderData();
+  return <div className={styles.shell}><header className={styles.nav}><Link className={styles.link} to="/">← Docent</Link><span className={styles.muted}>Wiki browser</span></header><section className={styles.section}><div className={styles.pageSectionHead}><div><h1>Wiki pages</h1><p className={styles.muted}>Browse your team’s published knowledge.</p></div>{viewer?.isEditor && <Link className={styles.primaryButton} to="/wiki/new">Create page</Link>}</div>{!viewer && <a className={styles.primaryButton} href="/auth/google">Sign in to browse the wiki</a>}{viewer && pages.length === 0 && <p className={styles.muted}>No pages yet.{viewer.isEditor ? ' Create the first one to start building the wiki.' : ''}</p>}<div className={styles.grid}>{pages.map((page) => <Link className={styles.card + ' ' + styles.link} key={page.id} to="/wiki/$slug" params={{ slug: page.slug }}><strong>{page.title}</strong><p className={styles.muted}>{page.author} · {new Date(page.updatedAt).toLocaleDateString()}</p></Link>)}</div></section></div>;
 }
