@@ -7,6 +7,32 @@ import { embedText } from '@/features/ai/vertex';
 import { getDocentAgent } from '@/mastra';
 
 const sourceSchema = z.object({ id: z.string().uuid(), text: z.string(), pageSlug: z.string().nullable(), pageTitle: z.string().nullable(), filename: z.string().nullable() });
+const conversationSchema = z.object({ id: z.string().uuid(), title: z.string(), updatedAt: z.string() });
+const conversationMessageSchema = z.object({ id: z.string().uuid(), role: z.enum(['user', 'assistant']), content: z.string(), createdAt: z.string() });
+const conversationIdSchema = z.object({ conversationId: z.string().uuid() });
+
+export const getConversations = createServerFn({ method: 'GET' }).handler(async () => {
+  const user = await requireSession();
+  return (await db()).any(sql.type(conversationSchema)`
+    SELECT id, title, updated_at::text AS "updatedAt" FROM conversation
+    WHERE owner_id = ${user.userId} AND deleted_at IS NULL
+    ORDER BY updated_at DESC LIMIT 30
+  `);
+});
+
+export const getConversationMessages = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => conversationIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    const user = await requireSession();
+    const conversation = await (await db()).maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+      SELECT id FROM conversation WHERE id = ${data.conversationId} AND owner_id = ${user.userId} AND deleted_at IS NULL
+    `);
+    if (!conversation) throw new Response('Conversation not found', { status: 404 });
+    return (await db()).any(sql.type(conversationMessageSchema)`
+      SELECT id, role, content, created_at::text AS "createdAt" FROM chat_message
+      WHERE conversation_id = ${conversation.id} ORDER BY created_at ASC
+    `);
+  });
 
 export const askDocent = createServerFn({ method: 'POST' })
   .validator((data: unknown) => chatInputSchema.parse(data))
