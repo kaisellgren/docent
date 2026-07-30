@@ -6,7 +6,7 @@ import { requireEditor, requireSession } from '@/server/auth';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const pageSummarySchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), updatedAt: z.string(), author: z.string() });
-const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int() });
+const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int(), createdAt: z.string(), spaceId: z.string().uuid(), spaceSlug: z.string(), spaceName: z.string(), parentPageId: z.string().uuid().nullable() });
 const revisionSummarySchema = z.object({ id: z.string().uuid(), revisionNumber: z.number().int(), title: z.string(), createdAt: z.string(), author: z.string() });
 const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
@@ -86,11 +86,13 @@ export const getPage = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     await requireSession();
     return (await db()).maybeOne(sql.type(pageSchema)`
-      SELECT p.id, p.slug, p.title, p.updated_at::text AS "updatedAt", u.display_name AS author,
+      SELECT p.id, p.slug, p.title, p.updated_at::text AS "updatedAt", p.created_at::text AS "createdAt",
+        p.space_id AS "spaceId", s.slug AS "spaceSlug", s.name AS "spaceName", p.parent_page_id AS "parentPageId", u.display_name AS author,
         r.markdown, r.id AS "revisionId", r.revision_number AS "revisionNumber"
       FROM wiki_page p
       JOIN page_revision r ON r.id = p.current_revision_id
       JOIN app_user u ON u.id = r.created_by
+      JOIN wiki_space s ON s.id = p.space_id
       WHERE p.slug = ${data.slug} AND p.deleted_at IS NULL
     `);
   });
