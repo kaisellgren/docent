@@ -10,6 +10,7 @@ import { embedText } from '@/features/ai/vertex';
 import { chunkText } from '@/features/ingestion/chunk';
 
 const jobSchema = z.object({ id: z.string().uuid(), contentKind: z.enum(['page', 'file']), pageRevisionId: z.string().uuid().nullable(), fileId: z.string().uuid().nullable() });
+const pendingJobSchema = z.object({ id: z.string().uuid() });
 const fileSchema = z.object({ id: z.string().uuid(), objectKey: z.string(), mediaType: z.string(), filename: z.string() });
 
 async function extractFile(file: z.infer<typeof fileSchema>) {
@@ -30,4 +31,21 @@ export async function processIngestionJob(jobId: string) {
     await pool.query(sql.unsafe`UPDATE ingestion_job SET status = 'ready', completed_at = now(), error_message = NULL WHERE id = ${job.id}`); if (job.fileId) await pool.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'ready', extraction_error = NULL WHERE id = ${job.fileId}`);
     return { processed: true };
   } catch (error) { const message = error instanceof Error ? error.message : 'Unknown ingestion error'; await pool.query(sql.unsafe`UPDATE ingestion_job SET status = 'failed', error_message = ${message}, completed_at = now() WHERE id = ${job.id}`); if (job.fileId) await pool.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'failed', extraction_error = ${message} WHERE id = ${job.fileId}`); throw error; }
+}
+
+export async function processPendingIngestionJobs(limit = 10) {
+  const pool = await db();
+  const jobs = await pool.any(sql.type(pendingJobSchema)`
+    SELECT id FROM ingestion_job WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT ${limit}
+  `);
+  let processed = 0;
+  let failed = 0;
+  for (const job of jobs) {
+    try {
+      if ((await processIngestionJob(job.id)).processed) processed += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return { discovered: jobs.length, processed, failed };
 }

@@ -9,9 +9,9 @@ export async function enqueueIngestionJob(jobId: string): Promise<boolean> {
   const queueName = configuration.CLOUD_TASKS_QUEUE;
   const taskUrl = configuration.CLOUD_RUN_TASK_URL;
   const serviceAccountEmail = configuration.CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL;
-  const taskConfiguration = [projectId, queueName, taskUrl, serviceAccountEmail];
+  const taskConfiguration = [queueName, taskUrl, serviceAccountEmail];
   if (taskConfiguration.every((value) => !value)) return false;
-  if (!projectId || !queueName || !taskUrl || !serviceAccountEmail) throw new Error('GOOGLE_CLOUD_PROJECT, CLOUD_TASKS_QUEUE, CLOUD_RUN_TASK_URL, and CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL must be configured together');
+  if (!projectId || !queueName || !taskUrl || !serviceAccountEmail) throw new Error('CLOUD_TASKS_QUEUE, CLOUD_RUN_TASK_URL, and CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL must be configured together when Cloud Tasks is enabled');
   client ??= new CloudTasksClient({ projectId });
   const parent = client.queuePath(projectId, configuration.GOOGLE_CLOUD_LOCATION, queueName);
   await client.createTask({

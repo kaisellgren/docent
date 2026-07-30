@@ -8,4 +8,11 @@ export function db(): Promise<DatabasePool> {
   return pool;
 }
 
+export async function closeDb(): Promise<void> {
+  if (!pool) return;
+  const databasePool = await pool;
+  pool = undefined;
+  await databasePool.end();
+}
+
 export { sql };
