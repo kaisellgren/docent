@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Search, Share2, Sparkles, Star, Sun } from 'lucide-react';
+import { MoreHorizontal, Pencil, Share2, Sparkles, Star } from 'lucide-react';
 import { Link, createFileRoute, notFound, redirect, useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +7,7 @@ import { deletePage, getPage, getPageRevisions, getSpacePages, restorePageRevisi
 import { attachFileToPage, detachFileFromPage, getPageAttachments, getSpaceFiles } from '@/features/files/server';
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
+import { TopNavigation } from '@/components/navigation';
 import * as styles from '@/styles/app.css';
 
 const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession());
@@ -83,12 +84,7 @@ function PageView() {
   const parentPath = getParentPath(page, spacePages);
 
   return <div>
-    <header className={styles.pageViewNav}>
-      <div className={`${styles.shell} ${styles.pageViewNavInner}`}>
-        <Link className={styles.pageViewBrand} to="/"><DocentMark />Docent</Link>
-        <div className={styles.pageViewNavRight}><Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces"><Search size={16} /></Link><button type="button" className={styles.pageIconButton} aria-label="Theme"><Sun size={15} /></button><span className={styles.pageViewAvatar}>{initials(viewer.name)}</span></div>
-      </div>
-    </header>
+    <TopNavigation viewer={viewer} />
     <div className={styles.pageActionBar}>
       <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
         <div className={styles.pageBreadcrumb}><Link className={styles.pageBreadcrumbLink} to="/spaces">Spaces</Link><span>/</span><Link className={styles.pageBreadcrumbLink} to="/spaces/space/$slug" params={{ slug: page.spaceSlug }}>{page.spaceName}</Link>{parentPath && <><span>/</span><span className={styles.pageBreadcrumbLink}>{parentPath}</span></>}<span>/</span><span className={styles.pageBreadcrumbCurrent}>{page.title}</span></div>
@@ -126,5 +122,4 @@ function slugify(value: string): string { return value.toLowerCase().trim().repl
 function getParentPath(page: { parentPageId: string | null }, pages: SpacePages): string { const parent = page.parentPageId ? pages.find((item) => item.id === page.parentPageId) : undefined; return parent?.title ?? ''; }
 function relativeTime(value: string): string { const minutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60_000)); if (minutes < 60) return `${minutes}m ago`; const hours = Math.round(minutes / 60); if (hours < 24) return `${hours}h ago`; const days = Math.round(hours / 24); return `${days}d ago`; }
 function initials(name: string): string { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase(); }
-function DocentMark() { return <svg className={styles.pageViewBrandMark} viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="5" r="2.6" fill="currentColor" opacity=".95" /><circle cx="5" cy="19" r="2.6" fill="currentColor" opacity=".7" /><circle cx="21" cy="19" r="2.6" fill="currentColor" opacity=".7" /><path d="M13 7.6 6.2 17M13 7.6 19.8 17M7.6 19h10.8" stroke="currentColor" strokeWidth="1.2" opacity=".5" /></svg>; }
 function messageFor(cause: unknown, action: string) { const detail = cause instanceof Error ? cause.message : ''; return detail ? `Unable to ${action}: ${detail}` : `Unable to ${action}. Please try again.`; }

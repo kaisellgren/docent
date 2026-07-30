@@ -1,7 +1,8 @@
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
-import { Grid2X2, List, Plus, Search, Sun } from "lucide-react";
+import { Grid2X2, List, Plus, Search } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
+import { TopNavigation } from "@/components/navigation";
 import { createSpace, getSpaces } from "@/features/wiki/server";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
@@ -55,33 +56,7 @@ function SpacesIndex() {
 
   return (
     <div>
-      <header className={styles.pageViewNav}>
-        <div className={`${styles.shell} ${styles.pageViewNavInner}`}>
-          <Link className={styles.pageViewBrand} to="/">
-            <DocentMark />
-            Docent
-          </Link>
-          <div className={styles.pageViewNavRight}>
-            <Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces">
-              <Search size={16} />
-            </Link>
-            <button type="button" className={styles.pageIconButton} aria-label="Theme">
-              <Sun size={15} />
-            </button>
-            {viewer ? (
-              <span className={styles.pageViewAvatar}>{initials(viewer.name)}</span>
-            ) : (
-              <a
-                className={styles.pageViewAvatar}
-                href="/auth/google"
-                aria-label="Sign in with Google"
-              >
-                ?
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
+      <TopNavigation viewer={viewer} />
       <div className={styles.pageActionBar}>
         <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
           <div className={styles.pageBreadcrumb}>
@@ -249,29 +224,4 @@ function relativeTime(value: string) {
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
-}
-
-function DocentMark() {
-  return (
-    <svg className={styles.pageViewBrandMark} viewBox="0 0 26 26" fill="none" aria-hidden="true">
-      <circle cx="13" cy="5" r="2.6" fill="currentColor" opacity=".95" />
-      <circle cx="5" cy="19" r="2.6" fill="currentColor" opacity=".7" />
-      <circle cx="21" cy="19" r="2.6" fill="currentColor" opacity=".7" />
-      <path
-        d="M13 7.6 6.2 17M13 7.6 19.8 17M7.6 19h10.8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        opacity=".5"
-      />
-    </svg>
-  );
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }

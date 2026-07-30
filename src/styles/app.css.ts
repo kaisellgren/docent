@@ -195,11 +195,14 @@ export const spaceFileMain = style({ display: 'flex', flexDirection: 'column', m
 export const fileMeta = style({ marginTop: 3, color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: 11 });
 
 export const pageViewNav = style({ position: 'sticky', top: 0, zIndex: 20, borderBottom: '1px solid rgba(255,255,255,.09)', background: 'rgba(8,20,32,.82)', backdropFilter: 'blur(10px)' });
-export const pageViewNavInner = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, gap: 16 });
+export const pageViewNavInner = style({ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, gap: 16 });
 export const pageViewBrand = style({ display: 'flex', alignItems: 'center', gap: 10, color: '#eaf3f5', fontSize: 17, fontWeight: 600, textDecoration: 'none' });
 export const pageViewBrandMark = style({ width: 24, height: 24, color: '#1fc8b5', flexShrink: 0 });
+export const pageViewCenterLinks = style({ position: 'absolute', left: '50%', display: 'flex', alignItems: 'center', gap: 28, transform: 'translateX(-50%)', '@media': { 'screen and (max-width: 700px)': { display: 'none' } } });
 export const pageViewNavRight = style({ display: 'flex', alignItems: 'center', gap: 10 });
 export const pageViewAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', fontSize: 11, fontWeight: 700 });
+export const pageAvatarMenu = style({ position: 'relative' });
+export const pageAvatarDropdown = style({ position: 'absolute', top: 42, right: 0, zIndex: 40, display: 'flex', flexDirection: 'column', minWidth: 190, padding: 12, border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: '#0f2434', boxShadow: '0 14px 30px rgba(0,0,0,.25)' });
 export const pageActionBar = style({ position: 'sticky', top: 64, zIndex: 15, borderBottom: '1px solid rgba(255,255,255,.09)', background: 'rgba(8,20,32,.9)', backdropFilter: 'blur(8px)' });
 export const pageActionBarInner = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 54, gap: 16 });
 export const pageBreadcrumb = style({ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, overflow: 'hidden', color: '#64828c', fontSize: 13, whiteSpace: 'nowrap' });
@@ -297,6 +300,13 @@ globalStyle(`${treeRow} a`, { display: 'flex', alignItems: 'center', gap: 6, min
 globalStyle(`${treeRow} a span`, { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
 globalStyle(`${treeRow} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${pageRow}:hover`, { background: 'rgba(20,48,68,.53)' });
+globalStyle(`${pageViewCenterLinks} a`, { color: '#9ab1ba', fontSize: 14, fontWeight: 500, textDecoration: 'none' });
+globalStyle(`${pageViewCenterLinks} a:hover`, { color: '#eaf3f5' });
+globalStyle(`${pageAvatarDropdown} strong`, { color: '#eaf3f5', fontSize: 13 });
+globalStyle(`${pageAvatarDropdown} small`, { marginTop: 3, overflow: 'hidden', color: '#64828c', fontSize: 11, textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
+globalStyle(`${pageAvatarDropdown} form`, { marginTop: 10, borderTop: '1px solid rgba(255,255,255,.09)', paddingTop: 9 });
+globalStyle(`${pageAvatarDropdown} button`, { width: '100%', padding: '7px 0', border: 0, background: 'transparent', color: '#9ab1ba', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'left' });
+globalStyle(`${pageAvatarDropdown} button:hover`, { color: '#eaf3f5' });
 globalStyle(`${recentFiles} h2`, { margin: 0, color: '#eaf3f5', fontSize: 16 });
 globalStyle(`${recentFiles} p`, { margin: '5px 0 0', color: '#64828c', fontSize: 12.5 });
 globalStyle(`${recentFilesHead} a`, { color: '#1fc8b5', fontSize: 12.5, textDecoration: 'none', whiteSpace: 'nowrap' });

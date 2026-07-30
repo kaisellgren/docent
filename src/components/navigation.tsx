@@ -1,0 +1,100 @@
+import { Link } from "@tanstack/react-router";
+import { Search, Sun } from "lucide-react";
+import { useState } from "react";
+import * as styles from "@/styles/app.css";
+
+export type NavigationViewer = { name: string; email: string; isEditor: boolean } | undefined;
+
+type TopNavigationProps = {
+  viewer: NavigationViewer;
+  centeredLinks?: boolean;
+};
+
+export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationProps) {
+  return (
+    <header className={styles.pageViewNav}>
+      <div className={`${styles.shell} ${styles.pageViewNavInner}`}>
+        <Link className={styles.pageViewBrand} to="/">
+          <DocentMark />
+          Docent
+        </Link>
+        {centeredLinks && (
+          <nav className={styles.pageViewCenterLinks} aria-label="Primary navigation">
+            <Link to="/spaces">Spaces</Link>
+            {viewer?.isEditor && (
+              <Link to="/spaces/new" search={{ spaceId: "" }}>
+                Create page
+              </Link>
+            )}
+          </nav>
+        )}
+        <div className={styles.pageViewNavRight}>
+          <Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces">
+            <Search size={16} />
+          </Link>
+          <button type="button" className={styles.pageIconButton} aria-label="Theme">
+            <Sun size={15} />
+          </button>
+          {viewer ? (
+            <AvatarMenu viewer={viewer} />
+          ) : (
+            <a className={styles.pageActionButton} href="/auth/google">
+              Sign in
+            </a>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function AvatarMenu({ viewer }: { viewer: NavigationViewer & { name: string; email: string } }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={styles.pageAvatarMenu}>
+      <button
+        type="button"
+        className={styles.pageViewAvatar}
+        aria-label="Open account menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {initials(viewer.name)}
+      </button>
+      {open && (
+        <div className={styles.pageAvatarDropdown} role="menu">
+          <strong>{viewer.name}</strong>
+          <small>{viewer.email}</small>
+          <form action="/auth/logout" method="post">
+            <button type="submit">Sign out</button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocentMark() {
+  return (
+    <svg className={styles.pageViewBrandMark} viewBox="0 0 26 26" fill="none" aria-hidden="true">
+      <circle cx="13" cy="5" r="2.6" fill="currentColor" opacity=".95" />
+      <circle cx="5" cy="19" r="2.6" fill="currentColor" opacity=".7" />
+      <circle cx="21" cy="19" r="2.6" fill="currentColor" opacity=".7" />
+      <path
+        d="M13 7.6 6.2 17M13 7.6 19.8 17M7.6 19h10.8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity=".5"
+      />
+    </svg>
+  );
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
