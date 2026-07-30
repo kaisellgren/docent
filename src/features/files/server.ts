@@ -11,8 +11,9 @@ import { env } from '@/server/env';
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES) });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
-const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderName: z.string().nullable() });
+const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), tags: z.array(z.string()) });
 const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable() });
+const moveFileSchema = fileIdSchema.extend({ folderId: z.string().uuid().nullable() });
 
 let storage: Storage | undefined;
 function bucket() {
@@ -38,9 +39,15 @@ export const getFiles = createServerFn({ method: 'GET' }).handler(async () => {
   await requireSession();
   return (await db()).any(sql.type(fileRowSchema)`
     SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
-      f.extraction_status AS status, f.created_at::text AS "createdAt", folder.name AS "folderName"
-    FROM stored_file f LEFT JOIN folder ON folder.id = f.folder_id
-    WHERE f.deleted_at IS NULL ORDER BY f.created_at DESC
+      f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName",
+      COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags
+    FROM stored_file f
+    LEFT JOIN folder ON folder.id = f.folder_id
+    LEFT JOIN file_tag ON file_tag.file_id = f.id
+    LEFT JOIN tag ON tag.id = file_tag.tag_id
+    WHERE f.deleted_at IS NULL
+    GROUP BY f.id, folder.name
+    ORDER BY f.created_at DESC
   `);
 });
 
@@ -106,6 +113,49 @@ export const attachFileToPage = createServerFn({ method: 'POST' })
   .validator((data: unknown) => z.object({ fileId: z.string().uuid(), pageId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
     const user = await requireEditor();
-    await (await db()).query(sql.unsafe`INSERT INTO page_file (page_id, file_id, attached_by) VALUES (${data.pageId}, ${data.fileId}, ${user.userId}) ON CONFLICT DO NOTHING`);
+    const pool = await db();
+    const page = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM wiki_page WHERE id = ${data.pageId} AND deleted_at IS NULL`);
+    const file = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL`);
+    if (!page || !file) throw new Response('The page or file no longer exists', { status: 404 });
+    await pool.query(sql.unsafe`INSERT INTO page_file (page_id, file_id, attached_by) VALUES (${data.pageId}, ${data.fileId}, ${user.userId}) ON CONFLICT DO NOTHING`);
     return { ok: true };
+  });
+
+export const moveFile = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => moveFileSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    if (data.folderId) {
+      const folder = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM folder WHERE id = ${data.folderId} AND deleted_at IS NULL`);
+      if (!folder) throw new Response('Destination folder not found', { status: 404 });
+    }
+    const file = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+      UPDATE stored_file SET folder_id = ${data.folderId}, updated_at = now() WHERE id = ${data.fileId} AND deleted_at IS NULL RETURNING id
+    `);
+    if (!file) throw new Response('File not found', { status: 404 });
+    return { ok: true };
+  });
+
+export const deleteFile = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => fileIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const file = await (await db()).maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+      UPDATE stored_file SET deleted_at = now(), updated_at = now() WHERE id = ${data.fileId} AND deleted_at IS NULL RETURNING id
+    `);
+    if (!file) throw new Response('File not found', { status: 404 });
+    return { ok: true };
+  });
+
+export const getDownloadUrl = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => fileIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    const file = await (await db()).maybeOne(sql.type(z.object({ objectKey: z.string() }))`
+      SELECT object_key AS "objectKey" FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
+    `);
+    if (!file) throw new Response('File not found', { status: 404 });
+    const [downloadUrl] = await bucket().file(file.objectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 15 * 60 * 1000 });
+    return { downloadUrl };
   });
