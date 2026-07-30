@@ -45,6 +45,9 @@ jobs:
         with:
           node-version: 26
           cache: npm
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.8
       - run: npm ci
       - uses: google-github-actions/auth@v3
         with:
