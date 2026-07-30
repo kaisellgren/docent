@@ -14,6 +14,8 @@ const envSchema = z.object({
   GCS_BUCKET: z.string().optional(),
   CLOUD_TASKS_QUEUE: z.string().optional(),
   CLOUD_RUN_TASK_URL: z.string().url().optional(),
+  CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
+  CLOUD_RUN_TASK_AUDIENCE: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -7,6 +7,7 @@ import { MAX_UPLOAD_BYTES, supportedUploadTypes, uploadMetadataSchema } from '@/
 import { requireEditor, requireSession } from '@/server/auth';
 import { db, sql } from '@/server/db';
 import { env } from '@/server/env';
+import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES) });
@@ -105,10 +106,15 @@ export const confirmUpload = createServerFn({ method: 'POST' })
     if (Number(metadata.size) !== file.sizeBytes) throw new Response('Uploaded size does not match the requested upload', { status: 400 });
     const [contents] = await gcsFile.download();
     if (!(await validateSignature(contents, file.mediaType))) throw new Response('The file does not match its declared type', { status: 400 });
-    await (await db()).transaction(async (transaction) => {
+    const job = await (await db()).transaction(async (transaction) => {
       await transaction.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', updated_at = now() WHERE id = ${data.fileId}`);
-      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${data.fileId}) ON CONFLICT (file_id) DO UPDATE SET status = 'pending', error_message = NULL, completed_at = NULL`);
+      return transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${data.fileId})
+        ON CONFLICT (file_id) DO UPDATE SET status = 'pending', error_message = NULL, completed_at = NULL
+        RETURNING id
+      `);
     });
+    await enqueueIngestionJob(job.id);
     return { ok: true };
   });
 

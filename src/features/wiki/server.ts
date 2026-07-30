@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pageInputSchema } from '@/server/content';
 import { db, sql } from '@/server/db';
 import { requireEditor, requireSession } from '@/server/auth';
+import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const pageSummarySchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), updatedAt: z.string(), author: z.string() });
 const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int() });
@@ -62,7 +63,7 @@ export const createPage = createServerFn({ method: 'POST' })
     const user = await requireEditor();
     const pool = await db();
     const slug = slugify(data.title);
-    return pool.transaction(async (transaction) => {
+    const result = await pool.transaction(async (transaction) => {
       const page = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
         INSERT INTO wiki_page (slug, title, created_by)
         VALUES (${slug}, ${data.title}, ${user.userId})
@@ -76,9 +77,13 @@ export const createPage = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`
         UPDATE wiki_page SET current_revision_id = ${revision.id}, updated_at = now() WHERE id = ${page.id}
       `);
-      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id})`);
-      return { slug, revisionId: revision.id };
+      const job = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id}) RETURNING id
+      `);
+      return { slug, revisionId: revision.id, jobId: job.id };
     });
+    await enqueueIngestionJob(result.jobId);
+    return result;
   });
 
 export const updatePage = createServerFn({ method: 'POST' })
@@ -86,7 +91,7 @@ export const updatePage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireEditor();
     const pool = await db();
-    return pool.transaction(async (transaction) => {
+    const result = await pool.transaction(async (transaction) => {
       const current = await transaction.one(sql.type(z.object({ id: z.string().uuid(), revisionNumber: z.number().int() }))`
         SELECT p.id, r.revision_number AS "revisionNumber"
         FROM wiki_page p JOIN page_revision r ON r.id = p.current_revision_id
@@ -101,9 +106,13 @@ export const updatePage = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`
         UPDATE wiki_page SET title = ${data.title}, current_revision_id = ${revision.id}, updated_at = now() WHERE id = ${current.id}
       `);
-      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id})`);
-      return { revisionId: revision.id };
+      const job = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id}) RETURNING id
+      `);
+      return { revisionId: revision.id, jobId: job.id };
     });
+    await enqueueIngestionJob(result.jobId);
+    return result;
   });
 
 export const restorePageRevision = createServerFn({ method: 'POST' })
@@ -111,7 +120,7 @@ export const restorePageRevision = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireEditor();
     const pool = await db();
-    return pool.transaction(async (transaction) => {
+    const result = await pool.transaction(async (transaction) => {
       const current = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid(), revisionNumber: z.number().int() }))`
         SELECT p.id, r.revision_number AS "revisionNumber"
         FROM wiki_page p
@@ -132,9 +141,13 @@ export const restorePageRevision = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`
         UPDATE wiki_page SET title = ${source.title}, current_revision_id = ${revision.id}, updated_at = now() WHERE id = ${current.id}
       `);
-      await transaction.query(sql.unsafe`INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id})`);
-      return { revisionId: revision.id };
+      const job = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${revision.id}) RETURNING id
+      `);
+      return { revisionId: revision.id, jobId: job.id };
     });
+    await enqueueIngestionJob(result.jobId);
+    return result;
   });
 
 export const deletePage = createServerFn({ method: 'POST' })

@@ -20,12 +20,14 @@ async function extractFile(file: z.infer<typeof fileSchema>) {
 }
 
 export async function processIngestionJob(jobId: string) {
-  const pool = await db(); const job = await pool.one(sql.type(jobSchema)`UPDATE ingestion_job SET status = 'processing', attempts = attempts + 1, started_at = now() WHERE id = ${jobId} AND status IN ('pending', 'failed') RETURNING id, content_kind AS "contentKind", page_revision_id AS "pageRevisionId", file_id AS "fileId"`);
+  const pool = await db(); const job = await pool.maybeOne(sql.type(jobSchema)`UPDATE ingestion_job SET status = 'processing', attempts = attempts + 1, started_at = now() WHERE id = ${jobId} AND status IN ('pending', 'failed') RETURNING id, content_kind AS "contentKind", page_revision_id AS "pageRevisionId", file_id AS "fileId"`);
+  if (!job) return { processed: false };
   try {
     let text = ''; let pageId: string | undefined;
     if (job.contentKind === 'page') { const row = await pool.one(sql.type(z.object({ markdown: z.string(), pageId: z.string().uuid() }))`SELECT markdown, page_id AS "pageId" FROM page_revision WHERE id = ${job.pageRevisionId}`); text = row.markdown; pageId = row.pageId; await pool.query(sql.unsafe`DELETE FROM content_chunk WHERE page_revision_id = ${job.pageRevisionId}`); }
     else { const file = await pool.one(sql.type(fileSchema)`SELECT id, object_key AS "objectKey", media_type AS "mediaType", original_filename AS filename FROM stored_file WHERE id = ${job.fileId}`); text = await extractFile(file); await pool.query(sql.unsafe`DELETE FROM content_chunk WHERE file_id = ${job.fileId}`); }
     for (const [ordinal, value] of chunk(text).entries()) { const embedding = await embedText(value); await pool.query(sql.unsafe`INSERT INTO content_chunk (content_kind, page_id, page_revision_id, file_id, ordinal, text_content, embedding) VALUES (${job.contentKind}, ${pageId ?? null}, ${job.pageRevisionId ?? null}, ${job.fileId ?? null}, ${ordinal}, ${value}, ${JSON.stringify(embedding)}::vector)`); }
     await pool.query(sql.unsafe`UPDATE ingestion_job SET status = 'ready', completed_at = now(), error_message = NULL WHERE id = ${job.id}`); if (job.fileId) await pool.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'ready', extraction_error = NULL WHERE id = ${job.fileId}`);
+    return { processed: true };
   } catch (error) { const message = error instanceof Error ? error.message : 'Unknown ingestion error'; await pool.query(sql.unsafe`UPDATE ingestion_job SET status = 'failed', error_message = ${message}, completed_at = now() WHERE id = ${job.id}`); if (job.fileId) await pool.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'failed', extraction_error = ${message} WHERE id = ${job.fileId}`); throw error; }
 }

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as ApiIngestionRouteImport } from './routes/api/ingestion'
 import { Route as AuthGoogleRouteImport } from './routes/auth/google'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as FilesIndexRouteImport } from './routes/files/index'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIngestionRoute = ApiIngestionRouteImport.update({
+  id: '/api/ingestion',
+  path: '/api/ingestion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthGoogleRoute = AuthGoogleRouteImport.update({
@@ -62,6 +68,7 @@ const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/api/ingestion': typeof ApiIngestionRoute
   '/auth/google': typeof AuthGoogleRouteWithChildren
   '/auth/logout': typeof AuthLogoutRoute
   '/wiki/$slug': typeof WikiSlugRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/chat'
+    | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/chat'
+    | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/chat'
+    | '/api/ingestion'
     | '/auth/google'
     | '/auth/logout'
     | '/wiki/$slug'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRoute
+  ApiIngestionRoute: typeof ApiIngestionRoute
   AuthGoogleRoute: typeof AuthGoogleRouteWithChildren
   AuthLogoutRoute: typeof AuthLogoutRoute
   WikiSlugRoute: typeof WikiSlugRoute
@@ -147,6 +160,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ingestion': {
+      id: '/api/ingestion'
+      path: '/api/ingestion'
+      fullPath: '/api/ingestion'
+      preLoaderRoute: typeof ApiIngestionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/google': {
@@ -209,6 +229,7 @@ const AuthGoogleRouteWithChildren = AuthGoogleRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
+  ApiIngestionRoute: ApiIngestionRoute,
   AuthGoogleRoute: AuthGoogleRouteWithChildren,
   AuthLogoutRoute: AuthLogoutRoute,
   WikiSlugRoute: WikiSlugRoute,
