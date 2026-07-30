@@ -20,6 +20,7 @@ class DocentDev extends TerraformStack {
       'aiplatform.googleapis.com',
       'artifactregistry.googleapis.com',
       'cloudtasks.googleapis.com',
+      'iam.googleapis.com',
       'iamcredentials.googleapis.com',
       'run.googleapis.com',
       'secretmanager.googleapis.com',
@@ -38,6 +39,55 @@ class DocentDev extends TerraformStack {
       displayName: 'Docent dev Cloud Tasks caller',
       dependsOn: [enabledServices.get('iamcredentials.googleapis.com')!],
     });
+    const githubDeployer = new google.serviceAccount.ServiceAccount(this, 'github-deployer', {
+      accountId: 'docent-github-deployer',
+      displayName: 'Docent GitHub Actions deployer',
+      dependsOn: [enabledServices.get('iam.googleapis.com')!],
+    });
+    const githubPool = new google.iamWorkloadIdentityPool.IamWorkloadIdentityPool(this, 'github-pool', {
+      workloadIdentityPoolId: 'docent-github',
+      displayName: 'Docent GitHub Actions',
+      description: 'Keyless deployment identity for the Docent GitHub repository.',
+      dependsOn: [enabledServices.get('iam.googleapis.com')!],
+    });
+    const githubProvider = new google.iamWorkloadIdentityPoolProvider.IamWorkloadIdentityPoolProvider(this, 'github-provider', {
+      workloadIdentityPoolId: githubPool.workloadIdentityPoolId,
+      workloadIdentityPoolProviderId: 'github',
+      displayName: 'Docent GitHub Actions provider',
+      attributeMapping: {
+        'google.subject': 'assertion.sub',
+        'attribute.repository': 'assertion.repository',
+        'attribute.ref': 'assertion.ref',
+      },
+      attributeCondition: "assertion.repository == 'kaisellgren/docent' && assertion.ref == 'refs/heads/main'",
+      oidc: { issuerUri: 'https://token.actions.githubusercontent.com' },
+      dependsOn: [githubPool],
+    });
+    new google.serviceAccountIamMember.ServiceAccountIamMember(this, 'github-deployer-wif-user', {
+      serviceAccountId: githubDeployer.name,
+      role: 'roles/iam.workloadIdentityUser',
+      member: `principalSet://iam.googleapis.com/${githubPool.name}/attribute.repository/kaisellgren/docent`,
+      dependsOn: [githubDeployer, githubProvider],
+    });
+    for (const role of [
+      'roles/artifactregistry.admin',
+      'roles/cloudtasks.admin',
+      'roles/iam.serviceAccountAdmin',
+      'roles/iam.serviceAccountUser',
+      'roles/iam.workloadIdentityPoolAdmin',
+      'roles/resourcemanager.projectIamAdmin',
+      'roles/run.admin',
+      'roles/secretmanager.admin',
+      'roles/serviceusage.serviceUsageAdmin',
+      'roles/storage.admin',
+    ]) {
+      new google.projectIamMember.ProjectIamMember(this, `github-deployer-${role.replace('roles/', '').replaceAll('.', '-')}`, {
+        project,
+        role,
+        member: `serviceAccount:${githubDeployer.email}`,
+        dependsOn: [githubDeployer],
+      });
+    }
     const projectInfo = new google.dataGoogleProject.DataGoogleProject(this, 'project-info', { projectId: project });
     const bucket = new google.storageBucket.StorageBucket(this, 'files', {
       name: `${project}-docent-files`,
@@ -99,6 +149,8 @@ class DocentDev extends TerraformStack {
       member: `serviceAccount:service-${projectInfo.number}@gcp-sa-cloudtasks.iam.gserviceaccount.com`,
       dependsOn: [enabledServices.get('cloudtasks.googleapis.com')!, taskAccount],
     });
+    new TerraformOutput(this, 'github_workload_identity_provider', { value: githubProvider.name });
+    new TerraformOutput(this, 'github_deployer_service_account', { value: githubDeployer.email });
 
     if (process.env.DOCENT_DEPLOY_WEB === 'false') {
       new TerraformOutput(this, 'task_service_account', { value: taskAccount.email });
