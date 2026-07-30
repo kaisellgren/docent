@@ -15,7 +15,7 @@ Overall completion is approximately **40–45%**: two roadmap steps are complete
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, Cloud Tasks enqueueing, and authenticated worker endpoint | Cloud Run IAM/task-service-account wiring, retry action/status UI, integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, and citations that link to pages | Streaming, new/resume conversation UI, and robust citations |
-| 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, service account, Secret Manager placeholders | Validate/synth CDKTF; IAM; public Cloud Run invocation; secret-version env mounts; task target; container build; budget alert; WIF resources |
+| 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, service account, Secret Manager placeholders; CDKTF synthesis succeeds | IAM; public Cloud Run invocation; secret-version env mounts; task target; container build; budget alert; WIF resources |
 | 9. CI/CD | Partial | GitHub Actions runs install/typecheck/lint/test/build/synth | GitHub OIDC Workload Identity Federation and main-only build/push/deploy workflow |
 | 10. Test coverage | Not started | Vitest and Playwright configuration files only | Unit tests, Playwright journeys, and running them in CI |
 
@@ -35,7 +35,7 @@ Overall completion is approximately **40–45%**: two roadmap steps are complete
 - `npm install` completes, with existing transitive Mastra peer-dependency warnings and npm audit findings.
 - `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
 - `npm run db:migrate` was run against local Podman PostgreSQL: `20260728100000_initial_schema.sql` is applied, with zero pending migrations.
-- CDKTF has **not** been synthesized successfully after `infra/main.ts` was adjusted to the current provider namespace API.
+- `npm run infra:synth` successfully generated the `docent-dev` Terraform stack.
 - Podman could not run in the prior sandbox due its runtime directory being read-only; this is environmental, not a project configuration result.
 
 ## Recommended continuation order
