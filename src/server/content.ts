@@ -5,6 +5,11 @@ export const pageInputSchema = z.object({
   markdown: z.string().max(200_000),
 });
 
+export const spaceInputSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500),
+});
+
 export const folderInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   parentId: z.string().uuid().nullable(),

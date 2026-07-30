@@ -19,6 +19,7 @@ import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSlugRouteImport } from './routes/wiki/$slug'
 import { Route as WikiNewRouteImport } from './routes/wiki/new'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/callback'
+import { Route as WikiSpaceSlugRouteImport } from './routes/wiki/space/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthGoogleRoute,
 } as any)
+const WikiSpaceSlugRoute = WikiSpaceSlugRouteImport.update({
+  id: '/wiki/space/$slug',
+  path: '/wiki/space/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/files': typeof FilesIndexRoute
   '/wiki': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/files/': typeof FilesIndexRoute
   '/wiki/': typeof WikiIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/wiki/space/$slug': typeof WikiSpaceSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/files/'
     | '/wiki/'
     | '/auth/google/callback'
+    | '/wiki/space/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/wiki'
     | '/auth/google/callback'
+    | '/wiki/space/$slug'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/files/'
     | '/wiki/'
     | '/auth/google/callback'
+    | '/wiki/space/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   WikiNewRoute: typeof WikiNewRoute
   FilesIndexRoute: typeof FilesIndexRoute
   WikiIndexRoute: typeof WikiIndexRoute
+  WikiSpaceSlugRoute: typeof WikiSpaceSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGoogleCallbackRouteImport
       parentRoute: typeof AuthGoogleRoute
     }
+    '/wiki/space/$slug': {
+      id: '/wiki/space/$slug'
+      path: '/wiki/space/$slug'
+      fullPath: '/wiki/space/$slug'
+      preLoaderRoute: typeof WikiSpaceSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -256,6 +276,7 @@ const rootRouteChildren: RootRouteChildren = {
   WikiNewRoute: WikiNewRoute,
   FilesIndexRoute: FilesIndexRoute,
   WikiIndexRoute: WikiIndexRoute,
+  WikiSpaceSlugRoute: WikiSpaceSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

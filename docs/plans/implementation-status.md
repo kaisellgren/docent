@@ -4,14 +4,14 @@ Updated: 2026-07-30
 
 ## Honest roadmap progress
 
-Overall completion is approximately **70%**: foundation, data, authentication, wiki, and CI/CD are complete; the remaining work is concentrated in file-library polish, ingestion validation, chat streaming, budget alerts, and test coverage.
+Overall completion is approximately **70%**: foundation, data, authentication, spaces/pages, and CI/CD are complete; the remaining work is concentrated in file-library polish, ingestion validation, chat streaming, budget alerts, and test coverage.
 
 | Roadmap step | Status | What exists | What remains |
 | --- | --- | --- | --- |
 | 1. Foundation | Complete | Node 26 / TypeScript 7 scaffold, Podman Compose PostgreSQL+pgvector, dbmate config, roadmap, Vite/TanStack configuration | Verify Podman on a host where Podman is available |
 | 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations; migrations applied to local PostgreSQL and Neon | — |
 | 3. Auth | Complete | Google OAuth start/callback/logout server routes, signed sessions, deploy-time `EDITOR_EMAILS` role checks, and verified local and deployed Cloud Run Google sign-in | — |
-| 4. Wiki pages | Complete | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, restore-as-new-revision, page attachments, accessible mutation feedback, pending states, and duplicate-title handling | — |
+| 4. Spaces and pages | Complete | Space browsing/creation, Markdown page creation/editing/rendering, parent-page hierarchy, revision history, restore-as-new-revision, page attachments, accessible mutation feedback, pending states, and duplicate-title handling | — |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, an authenticated Cloud Run worker endpoint, and task caller identity/IAM | Validate the deployed upload-to-indexing path, then add retry action/status UI and integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |

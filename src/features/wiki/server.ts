@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { pageInputSchema } from '@/server/content';
+import { pageInputSchema, spaceInputSchema } from '@/server/content';
 import { db, sql } from '@/server/db';
 import { requireEditor, requireSession } from '@/server/auth';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
@@ -11,6 +11,9 @@ const revisionSummarySchema = z.object({ id: z.string().uuid(), revisionNumber: 
 const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
+const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
+const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), pageCount: z.number().int(), updatedAt: z.string() });
+const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string() });
 
 function slugify(title: string): string {
   const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -28,6 +31,55 @@ export const getRecentPages = createServerFn({ method: 'GET' }).handler(async ()
     LIMIT 12
   `);
 });
+
+export const getSpaces = createServerFn({ method: 'GET' }).handler(async () => {
+  await requireSession();
+  return (await db()).any(sql.type(spaceSchema)`
+    SELECT s.id, s.slug, s.name, s.description, COUNT(p.id)::integer AS "pageCount",
+      GREATEST(s.updated_at, COALESCE(MAX(p.updated_at), s.updated_at))::text AS "updatedAt"
+    FROM wiki_space s
+    LEFT JOIN wiki_page p ON p.space_id = s.id AND p.deleted_at IS NULL
+    WHERE s.archived_at IS NULL
+    GROUP BY s.id
+    ORDER BY "updatedAt" DESC
+  `);
+});
+
+export const getSpace = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => z.object({ slug: z.string().min(1).max(240) }).parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    return (await db()).maybeOne(sql.type(spaceSchema)`
+      SELECT id, slug, name, description, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
+      FROM wiki_space WHERE slug = ${data.slug} AND archived_at IS NULL
+    `);
+  });
+
+export const getSpacePages = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => z.object({ spaceId: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    return (await db()).any(sql.type(spacePageSchema)`
+      SELECT id, slug, title, parent_page_id AS "parentPageId", updated_at::text AS "updatedAt"
+      FROM wiki_page
+      WHERE space_id = ${data.spaceId} AND deleted_at IS NULL
+      ORDER BY title
+    `);
+  });
+
+export const createSpace = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => spaceInputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const user = await requireEditor();
+    const slug = slugify(data.name);
+    const existing = await (await db()).maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM wiki_space WHERE slug = ${slug}`);
+    if (existing) throw new Response('A space with this name already exists. Choose a different name.', { status: 409 });
+    return (await db()).one(sql.type(spaceSchema)`
+      INSERT INTO wiki_space (slug, name, description, created_by)
+      VALUES (${slug}, ${data.name}, ${data.description}, ${user.userId})
+      RETURNING id, slug, name, description, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
+    `);
+  });
 
 export const getPage = createServerFn({ method: 'GET' })
   .validator((data: unknown) => slugSchema.parse(data))
@@ -58,12 +110,22 @@ export const getPageRevisions = createServerFn({ method: 'GET' })
   });
 
 export const createPage = createServerFn({ method: 'POST' })
-  .validator((data: unknown) => pageInputSchema.parse(data))
+  .validator((data: unknown) => createPageSchema.parse(data))
   .handler(async ({ data }) => {
     const user = await requireEditor();
     const pool = await db();
     const slug = slugify(data.title);
     const result = await pool.transaction(async (transaction) => {
+      const space = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id FROM wiki_space WHERE id = ${data.spaceId} AND archived_at IS NULL
+      `);
+      if (!space) throw new Response('The selected space no longer exists.', { status: 404 });
+      if (data.parentPageId) {
+        const parent = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+          SELECT id FROM wiki_page WHERE id = ${data.parentPageId} AND space_id = ${data.spaceId} AND deleted_at IS NULL
+        `);
+        if (!parent) throw new Response('The selected parent page is not in this space.', { status: 400 });
+      }
       const existing = await transaction.maybeOne(sql.type(z.object({ deletedAt: z.string().nullable() }))`
         SELECT deleted_at::text AS "deletedAt" FROM wiki_page WHERE slug = ${slug}
       `);
@@ -73,8 +135,8 @@ export const createPage = createServerFn({ method: 'POST' })
           : 'A page with this title already exists. Choose a different title.', { status: 409 });
       }
       const page = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
-        INSERT INTO wiki_page (slug, title, created_by)
-        VALUES (${slug}, ${data.title}, ${user.userId})
+        INSERT INTO wiki_page (slug, title, space_id, parent_page_id, created_by)
+        VALUES (${slug}, ${data.title}, ${data.spaceId}, ${data.parentPageId}, ${user.userId})
         RETURNING id
       `);
       const revision = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
@@ -136,7 +198,7 @@ export const restorePageRevision = createServerFn({ method: 'POST' })
         WHERE p.slug = ${data.slug} AND p.deleted_at IS NULL
         FOR UPDATE
       `);
-      if (!current) throw new Response('Wiki page not found', { status: 404 });
+      if (!current) throw new Response('Page not found', { status: 404 });
       const source = await transaction.maybeOne(sql.type(z.object({ title: z.string(), markdown: z.string() }))`
         SELECT title, markdown FROM page_revision WHERE id = ${data.revisionId} AND page_id = ${current.id}
       `);
