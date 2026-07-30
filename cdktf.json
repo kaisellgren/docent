@@ -1,1 +1,5 @@
-{"language":"typescript","app":"npx tsx infra/main.ts"}
+{
+  "language": "typescript",
+  "app": "node --env-file-if-exists=.env --import tsx infra/main.ts",
+  "projectId": "c2f61819-e282-49b2-9f91-e2664843fe24"
+}
