@@ -19,8 +19,8 @@
     "test:e2e": "playwright test",
     "db:up": "podman compose up -d postgres",
     "db:down": "podman compose down",
-    "db:migrate": "dbmate up",
-    "db:new": "dbmate new",
+    "db:migrate": "dbmate --env-file dbmate.env up",
+    "db:new": "dbmate --env-file dbmate.env new",
     "infra:synth": "cdktf synth",
     "infra:deploy": "cdktf deploy"
   },
