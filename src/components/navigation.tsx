@@ -45,6 +45,17 @@ export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationPr
   );
 }
 
+export function AppFooter() {
+  return (
+    <footer className={styles.appFooter}>
+      <div className={`${styles.shell} ${styles.appFooterInner}`}>
+        <span>© 2026 Docent — internal knowledge base</span>
+        <Link to="/terms">Terms of Service</Link>
+      </div>
+    </footer>
+  );
+}
+
 function AvatarMenu({ viewer }: { viewer: NavigationViewer & { name: string; email: string } }) {
   const [open, setOpen] = useState(false);
   return (
