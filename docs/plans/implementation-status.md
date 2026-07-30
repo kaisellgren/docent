@@ -4,13 +4,13 @@ Updated: 2026-07-30
 
 ## Honest roadmap progress
 
-Overall completion is approximately **50–55%**: two roadmap steps are complete and the remaining eight are partial.
+Overall completion is approximately **55–60%**: three roadmap steps are complete and the remaining seven are partial.
 
 | Roadmap step | Status | What exists | What remains |
 | --- | --- | --- | --- |
 | 1. Foundation | Complete | Node 26 / TypeScript 7 scaffold, Podman Compose PostgreSQL+pgvector, dbmate config, roadmap, Vite/TanStack configuration | Verify Podman on a host where Podman is available |
 | 2. Data layer | Complete | Slonik helpers and initial dbmate schema for users, pages/revisions, files/folders/tags, jobs/chunks, conversations/citations; migration applied to local PostgreSQL | Run migration against Neon when its connection URL is provisioned |
-| 3. Auth | Partial | Google OAuth start/callback/logout server routes, signed sessions, and deploy-time `EDITOR_EMAILS` role checks | Create local OAuth credentials and register the Vite callback URL; verify a real Google sign-in |
+| 3. Auth | Complete | Google OAuth start/callback/logout server routes, signed sessions, deploy-time `EDITOR_EMAILS` role checks, and verified local Google sign-in | Register the Cloud Run callback URL before production deployment |
 | 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, and restore-as-new-revision | Better mutation errors and page attachment UI |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
 | 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, and authenticated worker endpoint | Cloud Run IAM/task-service-account wiring, retry action/status UI, integration tests |
@@ -40,7 +40,7 @@ Overall completion is approximately **50–55%**: two roadmap steps are complete
 
 ## Recommended continuation order
 
-1. Create local Google OAuth credentials, set them in `.env`, register `http://localhost:5173/auth/google/callback`, and test sign-in locally.
+1. Run `gcloud auth application-default login`, then validate one local upload/indexing cycle against the dev GCS bucket and Vertex AI.
 2. Add integration coverage for page/file indexing, then wire the Cloud Run IAM and task service account in CDKTF.
 3. Add streaming to the Mastra chat flow.
 4. Wire Cloud Run IAM, task identity, and secret mounts in CDKTF, then implement GitHub OIDC deployment after the GCP project identifiers are available.
