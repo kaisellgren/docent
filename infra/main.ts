@@ -20,6 +20,7 @@ class DocentDev extends TerraformStack {
       'aiplatform.googleapis.com',
       'artifactregistry.googleapis.com',
       'cloudtasks.googleapis.com',
+      'cloudresourcemanager.googleapis.com',
       'iam.googleapis.com',
       'iamcredentials.googleapis.com',
       'run.googleapis.com',
