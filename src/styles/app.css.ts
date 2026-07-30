@@ -47,5 +47,6 @@ globalStyle('*', { boxSizing: 'border-box' });
 globalStyle('html, body', { margin: 0, minHeight: '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif', WebkitFontSmoothing: 'antialiased' });
 globalStyle('h1, h2, h3, .display', { fontFamily: '"Space Grotesk", Inter, sans-serif', letterSpacing: '-.01em' });
 globalStyle('a:hover', { color: '#1fc8b5' });
-globalStyle('button:focus-visible, input:focus-visible', { outline: '2px solid #1fc8b5', outlineOffset: 2 });
+globalStyle('button:focus-visible, input:focus-visible', { outline: '0px solid #1fc8b5', outlineOffset: 2 });
 globalStyle('button:disabled', { cursor: 'not-allowed', opacity: .6 });
+globalStyle(`${homeConsoleInput}::placeholder`, { color: '#9ab1ba', opacity: 1 });
