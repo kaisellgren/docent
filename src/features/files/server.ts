@@ -12,8 +12,11 @@ const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlforma
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES) });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
 const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), tags: z.array(z.string()) });
+const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
 const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable() });
 const moveFileSchema = fileIdSchema.extend({ folderId: z.string().uuid().nullable() });
+const pageIdSchema = z.object({ pageId: z.string().uuid() });
+const pageFileSchema = pageIdSchema.extend({ fileId: z.string().uuid() });
 
 let storage: Storage | undefined;
 function bucket() {
@@ -109,8 +112,25 @@ export const confirmUpload = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
+export const getPageAttachments = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => pageIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    return (await db()).any(sql.type(pageAttachmentSchema)`
+      SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
+        COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags, pf.attached_at::text AS "attachedAt"
+      FROM page_file pf
+      JOIN stored_file f ON f.id = pf.file_id
+      LEFT JOIN file_tag ON file_tag.file_id = f.id
+      LEFT JOIN tag ON tag.id = file_tag.tag_id
+      WHERE pf.page_id = ${data.pageId} AND f.deleted_at IS NULL
+      GROUP BY f.id, pf.attached_at
+      ORDER BY pf.attached_at DESC
+    `);
+  });
+
 export const attachFileToPage = createServerFn({ method: 'POST' })
-  .validator((data: unknown) => z.object({ fileId: z.string().uuid(), pageId: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => pageFileSchema.parse(data))
   .handler(async ({ data }) => {
     const user = await requireEditor();
     const pool = await db();
@@ -118,6 +138,14 @@ export const attachFileToPage = createServerFn({ method: 'POST' })
     const file = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL`);
     if (!page || !file) throw new Response('The page or file no longer exists', { status: 404 });
     await pool.query(sql.unsafe`INSERT INTO page_file (page_id, file_id, attached_by) VALUES (${data.pageId}, ${data.fileId}, ${user.userId}) ON CONFLICT DO NOTHING`);
+    return { ok: true };
+  });
+
+export const detachFileFromPage = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => pageFileSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    await (await db()).query(sql.unsafe`DELETE FROM page_file WHERE page_id = ${data.pageId} AND file_id = ${data.fileId}`);
     return { ok: true };
   });
 
