@@ -10,11 +10,11 @@ import { env } from '@/server/env';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
-const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES) });
+const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional() });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
-const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), tags: z.array(z.string()) });
+const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
 const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
-const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable() });
+const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable(), spaceId: z.string().uuid().nullable() });
 const moveFileSchema = fileIdSchema.extend({ folderId: z.string().uuid().nullable() });
 const pageIdSchema = z.object({ pageId: z.string().uuid() });
 const pageFileSchema = pageIdSchema.extend({ fileId: z.string().uuid() });
@@ -43,7 +43,7 @@ export const getFiles = createServerFn({ method: 'GET' }).handler(async () => {
   await requireSession();
   return (await db()).any(sql.type(fileRowSchema)`
     SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
-      f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName",
+      f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
       COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags
     FROM stored_file f
     LEFT JOIN folder ON folder.id = f.folder_id
@@ -57,16 +57,44 @@ export const getFiles = createServerFn({ method: 'GET' }).handler(async () => {
 
 export const getFolders = createServerFn({ method: 'GET' }).handler(async () => {
   await requireSession();
-  return (await db()).any(sql.type(folderSchema)`SELECT id, name, parent_id AS "parentId" FROM folder WHERE deleted_at IS NULL ORDER BY name`);
+  return (await db()).any(sql.type(folderSchema)`SELECT id, name, parent_id AS "parentId", space_id AS "spaceId" FROM folder WHERE deleted_at IS NULL ORDER BY name`);
 });
 
+export const getSpaceFiles = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => z.object({ spaceId: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    return (await db()).any(sql.type(fileRowSchema)`
+      SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
+        f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
+        COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags
+      FROM stored_file f
+      LEFT JOIN folder ON folder.id = f.folder_id
+      LEFT JOIN file_tag ON file_tag.file_id = f.id
+      LEFT JOIN tag ON tag.id = file_tag.tag_id
+      WHERE f.deleted_at IS NULL AND (f.space_id = ${data.spaceId} OR EXISTS (
+        SELECT 1 FROM page_file pf JOIN wiki_page p ON p.id = pf.page_id
+        WHERE pf.file_id = f.id AND p.space_id = ${data.spaceId} AND p.deleted_at IS NULL
+      ))
+      GROUP BY f.id, folder.name
+      ORDER BY f.created_at DESC
+    `);
+  });
+
+export const getSpaceFolders = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => z.object({ spaceId: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    return (await db()).any(sql.type(folderSchema)`SELECT id, name, parent_id AS "parentId", space_id AS "spaceId" FROM folder WHERE space_id = ${data.spaceId} AND deleted_at IS NULL ORDER BY name`);
+  });
+
 export const createFolder = createServerFn({ method: 'POST' })
-  .validator((data: unknown) => z.object({ name: z.string().trim().min(1).max(120), parentId: z.string().uuid().nullable() }).parse(data))
+  .validator((data: unknown) => z.object({ name: z.string().trim().min(1).max(120), parentId: z.string().uuid().nullable(), spaceId: z.string().uuid().nullable().optional() }).parse(data))
   .handler(async ({ data }) => {
     const user = await requireEditor();
     return (await db()).one(sql.type(folderSchema)`
-      INSERT INTO folder (name, parent_id, created_by) VALUES (${data.name}, ${data.parentId}, ${user.userId})
-      RETURNING id, name, parent_id AS "parentId"
+      INSERT INTO folder (name, parent_id, space_id, created_by) VALUES (${data.name}, ${data.parentId}, ${data.spaceId ?? null}, ${user.userId})
+      RETURNING id, name, parent_id AS "parentId", space_id AS "spaceId"
     `);
   });
 
@@ -79,8 +107,8 @@ export const createUploadIntent = createServerFn({ method: 'POST' })
     const objectKey = `uploads/${fileId}.${extension}`;
     await (await db()).transaction(async (transaction) => {
       await transaction.query(sql.unsafe`
-        INSERT INTO stored_file (id, folder_id, original_filename, media_type, size_bytes, object_key, uploaded_by)
-        VALUES (${fileId}, ${data.folderId ?? null}, ${data.filename}, ${data.mediaType}, ${data.sizeBytes}, ${objectKey}, ${user.userId})
+        INSERT INTO stored_file (id, folder_id, space_id, original_filename, media_type, size_bytes, object_key, uploaded_by)
+        VALUES (${fileId}, ${data.folderId ?? null}, ${data.spaceId ?? null}, ${data.filename}, ${data.mediaType}, ${data.sizeBytes}, ${objectKey}, ${user.userId})
       `);
       for (const tag of normalizedTags(data.tagNames)) {
         const tagRow = await transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
@@ -140,9 +168,10 @@ export const attachFileToPage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireEditor();
     const pool = await db();
-    const page = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM wiki_page WHERE id = ${data.pageId} AND deleted_at IS NULL`);
-    const file = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL`);
+    const page = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }))`SELECT id, space_id AS "spaceId" FROM wiki_page WHERE id = ${data.pageId} AND deleted_at IS NULL`);
+    const file = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid(), spaceId: z.string().uuid().nullable() }))`SELECT id, space_id AS "spaceId" FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL`);
     if (!page || !file) throw new Response('The page or file no longer exists', { status: 404 });
+    if (file.spaceId && file.spaceId !== page.spaceId) throw new Response('This file belongs to a different space.', { status: 400 });
     await pool.query(sql.unsafe`INSERT INTO page_file (page_id, file_id, attached_by) VALUES (${data.pageId}, ${data.fileId}, ${user.userId}) ON CONFLICT DO NOTHING`);
     return { ok: true };
   });
