@@ -97,7 +97,7 @@ class DocentDev extends TerraformStack {
       dependsOn: [enabledServices.get('cloudtasks.googleapis.com')!, taskAccount],
     });
 
-    if (process.env.DOCENT_DEPLOY_WEB !== 'true') {
+    if (process.env.DOCENT_DEPLOY_WEB === 'false') {
       new TerraformOutput(this, 'task_service_account', { value: taskAccount.email });
       new TerraformOutput(this, 'bootstrap_complete', { value: 'Set DOCENT_DEPLOY_WEB=true after pushing the image and adding secret versions.' });
       return;

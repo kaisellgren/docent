@@ -1,10 +1,12 @@
 # Dev deployment
 
-Set `GOOGLE_CLOUD_PROJECT`, then run `npm run infra:deploy -- --auto-approve` to create the bootstrap resources: APIs, bucket, registry, queue, service accounts, IAM bindings, and empty secrets. This first phase intentionally does not create Cloud Run because it needs an image and secret versions. Cloud Run, Storage, and Vertex use `europe-north1`; Cloud Tasks uses `europe-west1`, the nearest supported queue region.
+The CDKTF state is stored remotely in `gs://docent-terraform/docent/dev/default.tfstate`; the state bucket has object versioning enabled. Cloud Run, Storage, and Vertex use `europe-north1`; Cloud Tasks uses `europe-west1`, the nearest supported queue region.
 
-Push the image to the generated Artifact Registry repository and add the Neon URL, Google OAuth client ID/secret, and a 32+ character session secret as Secret Manager versions. Then run `DOCENT_DEPLOY_WEB=true npm run infra:deploy -- --auto-approve` to create Cloud Run with secret-version environment mounts. Copy its generated `service_url` and register `${Cloud Run URL}/auth/google/callback` in Google OAuth.
+For a new project, set `GOOGLE_CLOUD_PROJECT` and run `DOCENT_DEPLOY_WEB=false npm run infra:deploy -- --auto-approve` to create the bootstrap resources: APIs, bucket, registry, queue, service accounts, IAM bindings, and empty secrets. The default deployment includes Cloud Run.
 
-Finally, update the service with its real URL and queue target: `DOCENT_DEPLOY_WEB=true DOCENT_APP_URL=<Cloud Run URL> npm run infra:deploy -- --auto-approve`. This enables the correct production OAuth callback and Cloud Tasks configuration. GitHub deployment should use Workload Identity Federation and deploy only from `main`; no CDN, WAF, custom DNS, or Cloud SQL is provisioned.
+Push the image to the generated Artifact Registry repository and add the Neon URL, Google OAuth client ID/secret, and a 32+ character session secret as Secret Manager versions. Then run `npm run infra:deploy -- --auto-approve` to create Cloud Run with secret-version environment mounts. Copy its generated `service_url` and register `${Cloud Run URL}/auth/google/callback` in Google OAuth.
+
+Finally, update the service with its real URL and queue target: `DOCENT_APP_URL=<Cloud Run URL> npm run infra:deploy -- --auto-approve`. This enables the correct production OAuth callback and Cloud Tasks configuration. GitHub deployment should use Workload Identity Federation and deploy only from `main`; no CDN, WAF, custom DNS, or Cloud SQL is provisioned.
 
 ## Local cloud-backed testing
 
