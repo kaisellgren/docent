@@ -3,14 +3,14 @@ import { z } from 'zod';
 import { chatInputSchema } from '@/server/content';
 import { requireSession } from '@/server/auth';
 import { db, sql } from '@/server/db';
-import { answerWithVertex, embedText } from '@/features/ai/vertex';
+import { embedText } from '@/features/ai/vertex';
+import { getDocentAgent } from '@/mastra';
 
 const sourceSchema = z.object({ id: z.string().uuid(), text: z.string(), pageSlug: z.string().nullable(), pageTitle: z.string().nullable(), filename: z.string().nullable() });
 
 export const askDocent = createServerFn({ method: 'POST' })
   .validator((data: unknown) => chatInputSchema.parse(data))
   .handler(async ({ data }) => {
-    await import('@/mastra');
     const user = await requireSession(); const pool = await db();
     const conversation = data.conversationId ? await pool.one(sql.type(z.object({ id: z.string().uuid() }))`SELECT id FROM conversation WHERE id = ${data.conversationId} AND owner_id = ${user.userId} AND deleted_at IS NULL`) : await pool.one(sql.type(z.object({ id: z.string().uuid() }))`INSERT INTO conversation (owner_id, title) VALUES (${user.userId}, ${data.message.slice(0, 80)}) RETURNING id`);
     await pool.query(sql.unsafe`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'user', ${data.message})`);
@@ -22,7 +22,7 @@ export const askDocent = createServerFn({ method: 'POST' })
       ORDER BY c.embedding <=> ${JSON.stringify(embedding)}::vector LIMIT 6
     `);
     const context = sources.map((source, index) => `[${index + 1}] ${source.pageTitle ?? source.filename}\n${source.text}`).join('\n\n');
-    const answer = await answerWithVertex(data.message, context || 'No indexed knowledge is available.');
+    const answer = await getDocentAgent().generate(`Knowledge:\n${context || 'No indexed knowledge is available.'}\n\nQuestion: ${data.message}`).then((result) => result.text);
     const message = await pool.one(sql.type(z.object({ id: z.string().uuid() }))`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'assistant', ${answer}) RETURNING id`);
     for (const [ordinal, source] of sources.entries()) await pool.query(sql.unsafe`INSERT INTO message_citation (message_id, content_chunk_id, ordinal, excerpt) VALUES (${message.id}, ${source.id}, ${ordinal}, ${source.text.slice(0, 500)})`);
     await pool.query(sql.unsafe`UPDATE conversation SET updated_at = now() WHERE id = ${conversation.id}`);

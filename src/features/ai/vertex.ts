@@ -18,8 +18,3 @@ export async function embedText(text: string, taskType: 'RETRIEVAL_DOCUMENT' | '
   if (!values || values.length !== 768) throw new Error('Vertex did not return a 768-dimensional embedding');
   return values;
 }
-
-export async function answerWithVertex(question: string, context: string): Promise<string> {
-  const response = await vertexFetch(`${env().VERTEX_CHAT_MODEL}:generateContent`, { contents: [{ role: 'user', parts: [{ text: `You are Docent, a precise internal knowledge assistant. Answer only from the supplied knowledge. Cite source numbers such as [1] when you rely on them. If evidence is insufficient, say so.\n\nKnowledge:\n${context}\n\nQuestion: ${question}` }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1024 } }) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-  return response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') || 'I could not produce an answer from the indexed knowledge.';
-}
