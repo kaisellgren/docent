@@ -13,7 +13,7 @@ Overall completion is approximately **50–55%**: two roadmap steps are complete
 | 3. Auth | Partial | Google OAuth start/callback/logout server routes, signed sessions, and deploy-time `EDITOR_EMAILS` role checks | Create local OAuth credentials and register the Vite callback URL; verify a real Google sign-in |
 | 4. Wiki pages | Partial | SSR browse/create/edit/render/current revision/soft-delete flow, revision history, and restore-as-new-revision | Better mutation errors and page attachment UI |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
-| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, Cloud Tasks enqueueing, and authenticated worker endpoint | Cloud Run IAM/task-service-account wiring, retry action/status UI, integration tests |
+| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, and authenticated worker endpoint | Cloud Run IAM/task-service-account wiring, retry action/status UI, integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |
 | 8. GCP infrastructure | Partial | CDKTF scaffold for one `europe-north1` dev environment, Cloud Run, Storage, Tasks, Artifact Registry, service account, Secret Manager placeholders; CDKTF synthesis succeeds; runnable Cloud Run container image | IAM; public Cloud Run invocation; secret-version env mounts; task target; budget alert; WIF resources |
 | 9. CI/CD | Partial | GitHub Actions runs install/typecheck/lint/test/build/synth | GitHub OIDC Workload Identity Federation and main-only build/push/deploy workflow |
@@ -36,7 +36,7 @@ Overall completion is approximately **50–55%**: two roadmap steps are complete
 - `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
 - `npm run db:migrate` was run against local Podman PostgreSQL: `20260728100000_initial_schema.sql` is applied, with zero pending migrations.
 - `npm run infra:synth` successfully generated the `docent-dev` Terraform stack.
-- Podman could not run in the prior sandbox due its runtime directory being read-only; this is environmental, not a project configuration result.
+- `npm run ingestion:worker` runs against local PostgreSQL and cleanly reports pending-job results; local Application Default Credentials still need to be configured before GCS/Vertex processing can run.
 
 ## Recommended continuation order
 
