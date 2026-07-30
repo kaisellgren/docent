@@ -13,7 +13,7 @@ const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
 const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
 const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), pageCount: z.number().int(), updatedAt: z.string() });
-const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string() });
+const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string() });
 
 function slugify(title: string): string {
   const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -60,9 +60,9 @@ export const getSpacePages = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     await requireSession();
     return (await db()).any(sql.type(spacePageSchema)`
-      SELECT id, slug, title, parent_page_id AS "parentPageId", updated_at::text AS "updatedAt"
-      FROM wiki_page
-      WHERE space_id = ${data.spaceId} AND deleted_at IS NULL
+      SELECT p.id, p.slug, p.title, p.parent_page_id AS "parentPageId", p.updated_at::text AS "updatedAt", u.display_name AS author
+      FROM wiki_page p JOIN app_user u ON u.id = p.created_by
+      WHERE p.space_id = ${data.spaceId} AND p.deleted_at IS NULL
       ORDER BY title
     `);
   });
