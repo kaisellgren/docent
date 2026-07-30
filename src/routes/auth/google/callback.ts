@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { completeGoogleSignIn } from '@/server/auth';
+import { completeGoogleSignIn, googleSignInConfigurationProblem } from '@/server/auth';
 
 export const Route = createFileRoute('/auth/google/callback')({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        const problem = googleSignInConfigurationProblem();
+        if (problem) return new Response(problem, { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
         const url = new URL(request.url);
         const error = url.searchParams.get('error');
         const code = url.searchParams.get('code');

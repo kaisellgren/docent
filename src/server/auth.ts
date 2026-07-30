@@ -12,6 +12,19 @@ const encoder = new TextEncoder();
 type Session = { userId: string; email: string; name: string; isEditor: boolean };
 type GoogleProfile = { sub: string; email: string; name?: string; picture?: string };
 
+export function googleSignInConfigurationProblem(): string | undefined {
+  try {
+    env();
+    return undefined;
+  } catch {
+    const required = ['DATABASE_URL', 'SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+    const missing = required.filter((name) => !process.env[name]?.trim());
+    return missing.length
+      ? `Google sign-in is not configured. Set ${missing.join(', ')} in .env and restart Vite.`
+      : 'Google sign-in configuration is invalid. Check the values in .env and restart Vite.';
+  }
+}
+
 function google(): Google {
   const configuration = env();
   return new Google(configuration.GOOGLE_CLIENT_ID, configuration.GOOGLE_CLIENT_SECRET, `${configuration.APP_URL}/auth/google/callback`);
