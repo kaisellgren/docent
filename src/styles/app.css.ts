@@ -277,6 +277,7 @@ export const fileListingFolderDelete = style({ display: 'flex', alignItems: 'cen
 export const fileListingRows = style({ borderTop: '0.1rem solid rgba(255,255,255,.09)' });
 export const fileListingHead = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.4rem', marginBottom: '1.4rem' });
 export const fileUploadForm = style({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.7rem' });
+export const fileUploadFormDragging = style({ padding: '0.6rem', border: '0.1rem dashed #1fc8b5', borderRadius: '1rem', background: 'rgba(31,200,181,.1)' });
 export const fileUploadInput = style({ display: 'none' });
 export const fileUploadName = style({ maxWidth: '22rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
 export const spaceFileRow = style({ display: 'flex', alignItems: 'center', gap: '1.1rem', padding: '1.3rem 0.8rem', borderTop: '0.1rem solid rgba(255,255,255,.09)', color: '#9ab1ba' });

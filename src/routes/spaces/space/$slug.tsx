@@ -370,6 +370,7 @@ function FilesTab({
   const [uploadFolderId, setUploadFolderId] = useState("");
   const [uploadFilename, setUploadFilename] = useState("");
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadDragging, setUploadDragging] = useState(false);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
@@ -416,6 +417,7 @@ function FilesTab({
     setUploadFolderId("");
     setUploadFilename("");
     setUploadFiles([]);
+    setUploadDragging(false);
     window.location.reload();
   }
   async function addFolderSubmit(event: FormEvent<HTMLFormElement>) {
@@ -539,8 +541,8 @@ function FilesTab({
           <div className={styles.fileListingHead}>
             <h3>{selectedFolderId ? folderById.get(selectedFolderId)?.name ?? "Folder" : "Space"} <span>({visibleFiles.length})</span></h3>
             {viewerIsEditor && (
-              <form onSubmit={upload} className={styles.fileUploadForm}>
-                <label className={styles.detailButton} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = [...event.dataTransfer.files]; setUploadFiles(files); setUploadFilename(files.map((file) => file.name).join(", ")); }}>
+              <form onSubmit={upload} className={`${styles.fileUploadForm} ${uploadDragging ? styles.fileUploadFormDragging : ""}`} onDragEnter={(event) => { event.preventDefault(); setUploadDragging(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (event.currentTarget === event.target) setUploadDragging(false); }} onDrop={(event) => { event.preventDefault(); setUploadDragging(false); const files = [...event.dataTransfer.files]; setUploadFiles(files); setUploadFilename(files.map((file) => file.name).join(", ")); }}>
+                <label className={styles.detailButton}>
                   <Upload size={14} />
                   <span className={styles.fileUploadName}>{uploadFilename || "Choose file"}</span>
                   <input
