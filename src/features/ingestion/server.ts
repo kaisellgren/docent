@@ -17,7 +17,8 @@ function escapeHtml(value: string) {
 }
 
 function previewDocument(title: string, body: string) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{margin:0;padding:2rem 2.5rem;background:#fff;color:#20252b;font:16px/1.65 Inter,system-ui,sans-serif}main{max-width:56rem;margin:0 auto}h1{font-size:1.6rem;line-height:1.25;border-bottom:1px solid #d9e0e7;padding-bottom:1rem;margin:0 0 2rem}p{margin:0 0 1rem;white-space:pre-wrap}ul,ol{padding-left:1.5rem}img{max-width:100%}</style></head><body><main><h1>${escapeHtml(title)}</h1>${body}</main></body></html>`;
+  const safeBody = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{margin:0;padding:2rem 2.5rem;background:#fff;color:#20252b;font:16px/1.65 Inter,system-ui,sans-serif}main{max-width:56rem;margin:0 auto}h1{font-size:1.6rem;line-height:1.25;border-bottom:1px solid #d9e0e7;padding-bottom:1rem;margin:0 0 2rem}p{margin:0 0 1rem;white-space:pre-wrap}ul,ol{padding-left:1.5rem}img{max-width:100%}</style></head><body><main><h1>${escapeHtml(title)}</h1>${safeBody}</main></body></html>`;
 }
 
 async function renderFile(file: z.infer<typeof fileSchema>) {
