@@ -29,7 +29,7 @@ export function TopNavigation({ viewer, createPageContext }: TopNavigationProps)
           <Link to="/chat" search={{ q: "", conversationId: "" }}>Conversations</Link>
         </nav>
         <div className={styles.pageViewNavRight}>
-          <Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces">
+          <Link className={styles.pageIconButton} to="/chat" search={{ q: "", conversationId: "" }} aria-label="Search conversations">
             <Search size={16} />
           </Link>
           {viewer ? (

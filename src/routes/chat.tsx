@@ -59,6 +59,10 @@ function ChatPage() {
   }, [question]);
 
   useEffect(() => {
+    requestAnimationFrame(() => composerInputRef.current?.focus());
+  }, [conversationId]);
+
+  useEffect(() => {
     const messagesElement = messagesRef.current;
     if (!messagesElement) return;
     requestAnimationFrame(() => {
