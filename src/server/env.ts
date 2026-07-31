@@ -14,7 +14,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   GOOGLE_CLOUD_PROJECT: optionalString,
   GOOGLE_CLOUD_LOCATION: z.string().default('europe-north1'),
-  VERTEX_CHAT_MODEL: z.string().default('gemini-2.0-flash-001'),
+  VERTEX_CHAT_MODEL: z.string().default('gemini-2.5-flash-lite'),
   VERTEX_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
   GCS_BUCKET: optionalString,
   CLOUD_TASKS_QUEUE: optionalString,
