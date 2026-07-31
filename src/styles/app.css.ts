@@ -288,7 +288,7 @@ export const pageViewNav = style({ position: 'sticky', top: '0rem', zIndex: 20, 
 export const pageViewNavInner = style({ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '6.4rem', gap: '1.6rem' });
 export const pageViewBrand = style({ display: 'flex', alignItems: 'center', gap: '1rem', color: '#eaf3f5', fontSize: '1.7rem', fontWeight: 600, textDecoration: 'none' });
 export const pageViewBrandMark = style({ width: '2.4rem', height: '2.4rem', color: '#1fc8b5', flexShrink: 0 });
-export const pageViewCenterLinks = style({ position: 'absolute', left: '50%', display: 'flex', alignItems: 'center', gap: '2.8rem', transform: 'translateX(-50%)', '@media': { 'screen and (max-width: 70rem)': { display: 'none' } } });
+export const pageViewCenterLinks = style({ position: 'absolute', left: '50%', display: 'flex', alignItems: 'center', height: '100%', gap: '2.8rem', transform: 'translateX(-50%)', '@media': { 'screen and (max-width: 70rem)': { display: 'none' } } });
 export const pageViewNavRight = style({ display: 'flex', alignItems: 'center', gap: '1rem' });
 export const pageViewAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.2rem', height: '3.2rem', borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', fontSize: '1.1rem', fontWeight: 700 });
 export const appFooter = style({ borderTop: '0.1rem solid rgba(255,255,255,.09)', marginTop: '5rem' });
@@ -444,7 +444,7 @@ globalStyle(`${treeRow} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${treeList} li`, { marginBottom: '0.7rem' });
 globalStyle(`${pageRow}:hover`, { background: 'rgba(20,48,68,.53)' });
 globalStyle(`${pageRevisionList} + ${pageActionButton}`, { marginTop: '1.6rem' });
-globalStyle(`${pageViewCenterLinks} a`, { color: '#9ab1ba', fontSize: '1.4rem', fontWeight: 500, textDecoration: 'none' });
+globalStyle(`${pageViewCenterLinks} a`, { display: 'flex', alignItems: 'center', alignSelf: 'stretch', padding: '0 1rem', color: '#9ab1ba', fontSize: '1.4rem', fontWeight: 500, textDecoration: 'none' });
 globalStyle(`${pageViewCenterLinks} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${pageAvatarDropdown} strong`, { color: '#eaf3f5', fontSize: '1.3rem' });
 globalStyle(`${pageAvatarDropdown} small`, { marginTop: '0.3rem', overflow: 'hidden', color: '#64828c', fontSize: '1.1rem', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
