@@ -371,6 +371,7 @@ globalStyle('*::-webkit-scrollbar-thumb', { border: '0.2rem solid #0a1826', bord
 globalStyle('*::-webkit-scrollbar-thumb:hover', { background: 'linear-gradient(180deg, #6fa0ff, #1fc8b5)' });
 globalStyle('h1, h2, h3, .display', { fontFamily: '"Space Grotesk", Inter, sans-serif', letterSpacing: '-.01em' });
 globalStyle('a:hover', { color: '#1fc8b5' });
+globalStyle(`${primaryButton}:hover`, { color: '#04120f', background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(31,200,181,.25)', transform: 'translateY(-0.15rem)' });
 globalStyle(`${appFooter} a`, { color: '#64828c', textDecoration: 'none' });
 globalStyle(`${appFooter} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${termsPage} h1`, { margin: '1.6rem 0 0.8rem', color: '#eaf3f5', fontSize: '3.6rem', lineHeight: 1.15 });
