@@ -31,6 +31,7 @@ import { getSpace, getSpacePages, movePage, toggleSpaceFavorite, updateSpace } f
 import { TopNavigation } from "@/components/navigation";
 import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
 import { FancySelect } from "@/components/fancy-select";
+import { FilePreviewModal } from "@/components/file-preview-modal";
 import { IngestionStatus } from "@/components/ingestion-status";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
@@ -373,6 +374,7 @@ function FilesTab({
   const [uploadDragging, setUploadDragging] = useState(false);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<SpaceFileData[number] | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
   useEffect(() => { setSelectedFolderId(folderParam ?? null); }, [folderParam]);
   function selectFolder(folderId: string | null) {
@@ -576,7 +578,7 @@ function FilesTab({
                 <div className={styles.spaceFileRow} key={file.id}>
                   <FileText size={17} />
                   <div className={styles.spaceFileMain}>
-                    <b>{file.filename}</b>
+                    <b className={styles.filePreviewLink} onClick={() => setPreviewFile(file)}>{file.filename}</b>
                     <small>
                       {relativeTime(file.createdAt)}
                     </small>
@@ -610,6 +612,7 @@ function FilesTab({
           )}
         </section>
       </div>
+      <FilePreviewModal file={previewFile ? { id: previewFile.id, filename: previewFile.filename } : null} onClose={() => setPreviewFile(null)} />
     </section>
   );
 }
