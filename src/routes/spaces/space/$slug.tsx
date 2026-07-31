@@ -353,6 +353,7 @@ function FilesTab({
   const [parentId, setParentId] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [uploadFolderId, setUploadFolderId] = useState("");
+  const [uploadFilename, setUploadFilename] = useState("");
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
@@ -411,6 +412,7 @@ function FilesTab({
     setNotice("Upload accepted and queued for indexing.");
     formElement.reset();
     setUploadFolderId("");
+    setUploadFilename("");
     window.location.reload();
   }
   async function addFolderSubmit(event: FormEvent<HTMLFormElement>) {
@@ -537,11 +539,12 @@ function FilesTab({
               <form onSubmit={upload} className={styles.fileUploadForm}>
                 <label className={styles.detailButton}>
                   <Upload size={14} />
-                  Upload
+                  <span className={styles.fileUploadName}>{uploadFilename || "Choose file"}</span>
                   <input
                     name="file"
                     type="file"
                     accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text"
+                    onChange={(event) => setUploadFilename(event.target.files?.[0]?.name ?? "")}
                     required
                   />
                 </label>
