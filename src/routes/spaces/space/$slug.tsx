@@ -327,9 +327,9 @@ function RecentFiles({ files, spaceSlug }: { files: SpaceFileData; spaceSlug: st
             <div className={styles.recentFile} key={file.id}>
               <FileIcon size={15} />
               <span className={styles.recentFileDetails}>
-                <b>{file.filename}</b>
+                <b>{file.filename} </b>
                 <small>
-                  {file.folderName ?? "No folder"} · {relativeTime(file.createdAt)}
+                   · {relativeTime(file.createdAt)}
                 </small>
               </span>
               <span className={styles.fileLabels}>
