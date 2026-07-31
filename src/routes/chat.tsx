@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import { askDocent, deleteConversation, getConversationMessages, getConversations } from "@/features/chat/server";
 import { currentSession } from "@/server/auth";
