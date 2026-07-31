@@ -3,12 +3,13 @@ import { Link, createFileRoute, notFound, redirect, useRouter } from '@tanstack/
 import { useServerFn } from '@tanstack/react-start';
 import ReactMarkdown from 'react-markdown';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { deletePage, getPage, getPageRevisions, getSpacePages, restorePageRevision, updatePage } from '@/features/wiki/server';
+import { deletePage, getPage, getPageRevisions, getSpacePages, restorePageRevision, retryPageIngestion, updatePage } from '@/features/wiki/server';
 import { attachFileToPage, detachFileFromPage, getPageAttachments, getSpaceFiles } from '@/features/files/server';
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
 import { TopNavigation } from '@/components/navigation';
 import { SpaceIcon } from '@/components/space-icon';
+import { IngestionStatus } from '@/components/ingestion-status';
 import * as styles from '@/styles/app.css';
 
 const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession());
@@ -36,6 +37,7 @@ function PageView() {
   const update = useServerFn(updatePage);
   const restore = useServerFn(restorePageRevision);
   const remove = useServerFn(deletePage);
+  const retryIngestion = useServerFn(retryPageIngestion);
   const attach = useServerFn(attachFileToPage);
   const detach = useServerFn(detachFileFromPage);
   const router = useRouter();
@@ -75,6 +77,13 @@ function PageView() {
   async function sharePage() {
     try { await navigator.clipboard?.writeText(window.location.href); setNotice('Page link copied to clipboard.'); } catch { setNotice('Copy the page URL from your browser address bar.'); }
   }
+  async function retryIndexing() {
+    await run('retry indexing', async () => {
+      await retryIngestion({ data: { slug: page.slug } });
+      setNotice('Indexing restarted.');
+      await router.invalidate();
+    });
+  }
 
   const isPending = (action: string) => pendingAction === action;
   const availableFiles = files.filter((file) => !attachments.some((attachment) => attachment.id === file.id));
@@ -95,7 +104,7 @@ function PageView() {
     <main className={`${styles.shell} ${styles.pageViewBody}`}>
       <PageTree pages={spacePages} currentId={page.id} spaceSlug={page.spaceSlug} spaceIcon={page.spaceIcon} />
       <article className={styles.pageArticle}>
-        <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}><SpaceIcon name={page.spaceIcon} size={14} /> {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span></div></div>
+        <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}><SpaceIcon name={page.spaceIcon} size={14} /> {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span><IngestionStatus status={page.ingestionStatus} error={page.ingestionError} onRetry={viewer.isEditor && page.ingestionStatus === 'failed' ? () => { void retryIndexing(); } : undefined} /></div></div>
         {editing ? <form className={styles.pageEditForm} onSubmit={save}><input className={styles.pageEditTitle} value={title} onChange={(event) => setTitle(event.target.value)} disabled={Boolean(pendingAction)} required /><textarea className={styles.pageEditTextarea} value={markdown} onChange={(event) => setMarkdown(event.target.value)} disabled={Boolean(pendingAction)} required /><div className={styles.actions}><button className={styles.pageActionPrimary} disabled={Boolean(pendingAction)}>{isPending('save this revision') ? 'Saving…' : 'Save revision'}</button><button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { setEditing(false); setTitle(page.title); setMarkdown(page.markdown); }}>Cancel</button></div></form> : <div className={styles.pageProse}><ReactMarkdown components={{ h2: ({ children }) => <h2 id={headingId(children)}>{children}</h2>, h3: ({ children }) => <h3 id={headingId(children)}>{children}</h3> }}>{page.markdown}</ReactMarkdown></div>}
         {notice && <p className={styles.feedbackSuccess} role="status">{notice}</p>}{error && <p className={styles.feedbackError} role="alert">{error}</p>}
         <section className={styles.pageAttachments}><h2>Attachments</h2>{attachments.length === 0 && <p className={styles.muted}>No files are attached to this page.</p>}{attachments.map((file) => <div className={styles.pageAttachment} key={file.id}><span><b>{file.filename}</b><br /><small>{file.mediaType.split('/').pop()} · {(file.sizeBytes / 1024).toFixed(0)} KiB{file.tags.length ? ` · ${file.tags.join(', ')}` : ''}</small></span>{viewer.isEditor && <button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { void detachFile(file.id); }}>{isPending('detach this file') ? 'Detaching…' : 'Detach'}</button>}</div>)}{viewer.isEditor && <div className={styles.actions}><select value={attachmentFileId} disabled={Boolean(pendingAction) || availableFiles.length === 0} onChange={(event) => setAttachmentFileId(event.target.value)}><option value="">{availableFiles.length ? 'Attach a library file' : 'All library files are attached'}</option>{availableFiles.map((file) => <option key={file.id} value={file.id}>{file.filename}</option>)}</select><button type="button" className={styles.pageActionButton} disabled={!attachmentFileId || Boolean(pendingAction)} onClick={() => { void attachSelectedFile(); }}>{isPending('attach this file') ? 'Attaching…' : 'Attach file'}</button></div>}</section>

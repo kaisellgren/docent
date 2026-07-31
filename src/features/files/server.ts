@@ -12,7 +12,7 @@ import { enqueueIngestionJob } from '@/features/ingestion/queue';
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional() });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
-const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
+const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), error: z.string().nullable(), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
 const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
 const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable(), spaceId: z.string().uuid().nullable() });
 const moveFileSchema = fileIdSchema.extend({ folderId: z.string().uuid().nullable() });
@@ -43,7 +43,7 @@ export const getFiles = createServerFn({ method: 'GET' }).handler(async () => {
   await requireSession();
   return (await db()).any(sql.type(fileRowSchema)`
     SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
-      f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
+      f.extraction_status AS status, f.extraction_error AS error, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
       COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags
     FROM stored_file f
     LEFT JOIN folder ON folder.id = f.folder_id
@@ -66,7 +66,7 @@ export const getSpaceFiles = createServerFn({ method: 'GET' })
     await requireSession();
     return (await db()).any(sql.type(fileRowSchema)`
       SELECT f.id, f.original_filename AS filename, f.media_type AS "mediaType", f.size_bytes AS "sizeBytes",
-        f.extraction_status AS status, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
+        f.extraction_status AS status, f.extraction_error AS error, f.created_at::text AS "createdAt", f.folder_id AS "folderId", folder.name AS "folderName", f.space_id AS "spaceId",
         COALESCE(array_agg(tag.name) FILTER (WHERE tag.id IS NOT NULL), '{}') AS tags
       FROM stored_file f
       LEFT JOIN folder ON folder.id = f.folder_id
@@ -140,6 +140,32 @@ export const confirmUpload = createServerFn({ method: 'POST' })
         INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${data.fileId})
         ON CONFLICT (file_id) DO UPDATE SET status = 'pending', error_message = NULL, completed_at = NULL
         RETURNING id
+      `);
+    });
+    await enqueueIngestionJob(job.id);
+    return { ok: true };
+  });
+
+export const retryFileIngestion = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => fileIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    const job = await pool.transaction(async (transaction) => {
+      const file = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
+      `);
+      if (!file) throw new Response('File not found', { status: 404 });
+      await transaction.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', extraction_error = NULL, updated_at = now() WHERE id = ${file.id}`);
+      const existing = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id FROM ingestion_job WHERE file_id = ${file.id}
+      `);
+      if (existing) {
+        await transaction.query(sql.unsafe`UPDATE ingestion_job SET status = 'pending', error_message = NULL, started_at = NULL, completed_at = NULL WHERE id = ${existing.id}`);
+        return existing;
+      }
+      return transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${file.id}) RETURNING id
       `);
     });
     await enqueueIngestionJob(job.id);

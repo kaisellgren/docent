@@ -33,10 +33,12 @@ export async function processIngestionJob(jobId: string) {
   } catch (error) { const message = error instanceof Error ? error.message : 'Unknown ingestion error'; await pool.query(sql.unsafe`UPDATE ingestion_job SET status = 'failed', error_message = ${message}, completed_at = now() WHERE id = ${job.id}`); if (job.fileId) await pool.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'failed', extraction_error = ${message} WHERE id = ${job.fileId}`); throw error; }
 }
 
-export async function processPendingIngestionJobs(limit = 10) {
+export async function processPendingIngestionJobs(limit = 10, includeFailed = true) {
   const pool = await db();
   const jobs = await pool.any(sql.type(pendingJobSchema)`
-    SELECT id FROM ingestion_job WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT ${limit}
+    SELECT id FROM ingestion_job
+    WHERE status = 'pending' OR (${includeFailed} AND status = 'failed')
+    ORDER BY created_at ASC LIMIT ${limit}
   `);
   let processed = 0;
   let failed = 0;

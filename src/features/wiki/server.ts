@@ -6,14 +6,15 @@ import { requireEditor, requireSession } from '@/server/auth';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const pageSummarySchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), updatedAt: z.string(), author: z.string() });
-const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int(), createdAt: z.string(), spaceId: z.string().uuid(), spaceSlug: z.string(), spaceName: z.string(), spaceIcon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), parentPageId: z.string().uuid().nullable() });
+const ingestionStatusSchema = z.enum(['pending', 'processing', 'ready', 'failed']);
+const pageSchema = pageSummarySchema.extend({ markdown: z.string(), revisionId: z.string().uuid(), revisionNumber: z.number().int(), createdAt: z.string(), spaceId: z.string().uuid(), spaceSlug: z.string(), spaceName: z.string(), spaceIcon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), parentPageId: z.string().uuid().nullable(), ingestionStatus: ingestionStatusSchema.nullable(), ingestionError: z.string().nullable() });
 const revisionSummarySchema = z.object({ id: z.string().uuid(), revisionNumber: z.number().int(), title: z.string(), createdAt: z.string(), author: z.string() });
 const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
 const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
 const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), pageCount: z.number().int(), updatedAt: z.string() });
-const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string() });
+const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string(), ingestionStatus: ingestionStatusSchema.nullable(), ingestionError: z.string().nullable() });
 
 function slugify(title: string): string {
   const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -60,8 +61,10 @@ export const getSpacePages = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     await requireSession();
     return (await db()).any(sql.type(spacePageSchema)`
-      SELECT p.id, p.slug, p.title, p.parent_page_id AS "parentPageId", p.updated_at::text AS "updatedAt", u.display_name AS author
+      SELECT p.id, p.slug, p.title, p.parent_page_id AS "parentPageId", p.updated_at::text AS "updatedAt", u.display_name AS author,
+        j.status AS "ingestionStatus", j.error_message AS "ingestionError"
       FROM wiki_page p JOIN app_user u ON u.id = p.created_by
+      LEFT JOIN ingestion_job j ON j.page_revision_id = p.current_revision_id
       WHERE p.space_id = ${data.spaceId} AND p.deleted_at IS NULL
       ORDER BY title
     `);
@@ -88,13 +91,40 @@ export const getPage = createServerFn({ method: 'GET' })
     return (await db()).maybeOne(sql.type(pageSchema)`
       SELECT p.id, p.slug, p.title, p.updated_at::text AS "updatedAt", p.created_at::text AS "createdAt",
         p.space_id AS "spaceId", s.slug AS "spaceSlug", s.name AS "spaceName", s.icon AS "spaceIcon", p.parent_page_id AS "parentPageId", u.display_name AS author,
+        j.status AS "ingestionStatus", j.error_message AS "ingestionError",
         r.markdown, r.id AS "revisionId", r.revision_number AS "revisionNumber"
       FROM wiki_page p
       JOIN page_revision r ON r.id = p.current_revision_id
       JOIN app_user u ON u.id = r.created_by
       JOIN wiki_space s ON s.id = p.space_id
+      LEFT JOIN ingestion_job j ON j.page_revision_id = r.id
       WHERE p.slug = ${data.slug} AND p.deleted_at IS NULL
     `);
+  });
+
+export const retryPageIngestion = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => slugSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    const job = await pool.transaction(async (transaction) => {
+      const page = await transaction.maybeOne(sql.type(z.object({ revisionId: z.string().uuid() }))`
+        SELECT current_revision_id AS "revisionId" FROM wiki_page WHERE slug = ${data.slug} AND deleted_at IS NULL
+      `);
+      if (!page) throw new Response('Page not found', { status: 404 });
+      const existing = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id FROM ingestion_job WHERE page_revision_id = ${page.revisionId}
+      `);
+      if (existing) {
+        await transaction.query(sql.unsafe`UPDATE ingestion_job SET status = 'pending', error_message = NULL, started_at = NULL, completed_at = NULL WHERE id = ${existing.id}`);
+        return existing;
+      }
+      return transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
+        INSERT INTO ingestion_job (content_kind, page_revision_id) VALUES ('page', ${page.revisionId}) RETURNING id
+      `);
+    });
+    await enqueueIngestionJob(job.id);
+    return { ok: true };
   });
 
 export const getPageRevisions = createServerFn({ method: 'GET' })

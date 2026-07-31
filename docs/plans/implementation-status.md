@@ -1,10 +1,10 @@
 # Docent implementation status
 
-Updated: 2026-07-30
+Updated: 2026-07-31
 
 ## Honest roadmap progress
 
-Overall completion is approximately **70%**: foundation, data, authentication, spaces/pages, and CI/CD are complete; the remaining work is concentrated in file-library polish, ingestion validation, chat streaming, budget alerts, and test coverage.
+Overall completion is approximately **75%**: foundation, data, authentication, spaces/pages, local cloud-backed ingestion, and CI/CD are complete; the remaining work is concentrated in deployed ingestion validation, chat streaming, budget alerts, and broader test coverage.
 
 | Roadmap step | Status | What exists | What remains |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ Overall completion is approximately **70%**: foundation, data, authentication, s
 | 3. Auth | Complete | Google OAuth start/callback/logout server routes, signed sessions, deploy-time `EDITOR_EMAILS` role checks, and verified local and deployed Cloud Run Google sign-in | — |
 | 4. Spaces and pages | Complete | Space browsing/creation, Markdown page creation/editing/rendering, parent-page hierarchy, revision history, restore-as-new-revision, page attachments, accessible mutation feedback, pending states, and duplicate-title handling | — |
 | 5. File library | Partial | Signed upload intent, server-side PDF/DOCX/ODT validation, 5 MiB limit, folder/tag schema, nested folder creation, tagged library listing, move/delete/download, and page attachments | Folder deletion/move UX and integration tests |
-| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot worker, Cloud Tasks enqueueing, an authenticated Cloud Run worker endpoint, and task caller identity/IAM | Validate the deployed upload-to-indexing path, then add retry action/status UI and integration tests |
+| 6. Ingestion | Partial | PDF/DOCX/ODT extraction, chunking, Vertex embeddings, job states, pgvector persistence, local one-shot/watch workers, Cloud Tasks enqueueing, an authenticated Cloud Run worker endpoint, task caller identity/IAM, and retry/status UI | Validate the deployed upload-to-indexing path and add integration tests |
 | 7. AI chat | Partial | Private conversation/message schema, pgvector retrieval, Mastra/Vertex answer generation, cited answers, and new/resume history UI with persisted citations | Streaming |
 | 8. GCP infrastructure | Partial | One deployed dev environment: Cloud Run, Storage, Cloud Tasks, Artifact Registry, runtime/task service accounts, least-privilege IAM, populated Secret Manager versions, a versioned GCS Terraform backend, and GitHub WIF. Cloud Run responds with HTTP 200 and CDKTF synthesis succeeds. | Budget alert |
 | 9. CI/CD | Complete | GitHub Actions runs verification and a main-only keyless pipeline for infrastructure, Neon migrations, image publishing, Cloud Run deployment, and smoke testing; the first full deployment succeeded | — |
@@ -36,7 +36,7 @@ Overall completion is approximately **70%**: foundation, data, authentication, s
 - `npm run build` and `npm run typecheck` pass after the OAuth, anonymous route, and revision-history updates.
 - `npm run db:migrate` was run against local Podman PostgreSQL, and the deploy workflow applied `20260728100000_initial_schema.sql` to Neon.
 - `npm run infra:synth` successfully generated the `docent-dev` Terraform stack.
-- `npm run ingestion:worker` runs against local PostgreSQL and cleanly reports pending-job results; local Application Default Credentials are configured for GCS/Vertex processing.
+- `npm run ingestion:worker` and `npm run ingestion:watch` run against local PostgreSQL and cleanly report pending-job results; local Application Default Credentials are configured for GCS/Vertex processing. The local migration and worker smoke checks pass with the dev GCS/Vertex configuration.
 - The `docent-dev` GCP bootstrap and Cloud Run service are deployed. Cloud Run, Storage, and Vertex use `europe-north1`; the `docent-ingestion` Cloud Tasks queue uses `europe-west1`, because Cloud Tasks does not support `europe-north1`.
 - The first GitHub Actions deployment completed successfully: it synthesized/deployed infrastructure, ran Neon migrations, published the container, deployed Cloud Run, and passed its smoke test. Google sign-in is verified on the deployed URL.
 
@@ -44,9 +44,8 @@ Overall completion is approximately **70%**: foundation, data, authentication, s
 
 1. Validate one deployed upload/indexing cycle against the dev GCS bucket and Vertex AI.
 2. Complete folder delete/move UX and add file/indexing integration coverage.
-3. Add retry/status UI for ingestion failures.
-4. Add streaming to the Mastra chat flow.
-5. Configure the budget alert, then expand Vitest, Playwright, and CI coverage.
+3. Add streaming to the Mastra chat flow.
+4. Configure the budget alert, then expand Vitest, Playwright, and CI coverage.
 
 ## Important configuration
 

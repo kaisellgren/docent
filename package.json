@@ -22,6 +22,7 @@
     "db:migrate": "dbmate --env-file dbmate.env up",
     "db:new": "dbmate --env-file dbmate.env new",
     "ingestion:worker": "node --env-file-if-exists=.env --import tsx src/commands/ingestion-worker.ts",
+    "ingestion:watch": "node --env-file-if-exists=.env --import tsx src/commands/ingestion-worker.ts --watch",
     "infra:synth": "cdktf synth",
     "infra:deploy": "cdktf deploy"
   },

@@ -22,10 +22,12 @@ import {
   getDownloadUrl,
   getSpaceFiles,
   getSpaceFolders,
+  retryFileIngestion,
 } from "@/features/files/server";
 import { getSpace, getSpacePages } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
 import { SpaceIcon } from "@/components/space-icon";
+import { IngestionStatus } from "@/components/ingestion-status";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
 
@@ -331,6 +333,7 @@ function FilesTab({
   const confirm = useServerFn(confirmUpload);
   const addFolder = useServerFn(createFolder);
   const download = useServerFn(getDownloadUrl);
+  const retryFile = useServerFn(retryFileIngestion);
   const [notice, setNotice] = useState("");
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
@@ -389,6 +392,11 @@ function FilesTab({
   async function downloadFile(fileId: string) {
     const result = await download({ data: { fileId } });
     window.location.assign(result.downloadUrl);
+  }
+  async function retry(fileId: string) {
+    await retryFile({ data: { fileId } });
+    setNotice("Indexing restarted.");
+    window.location.reload();
   }
   const renderFolders = (parent: string | null): ReactNode => (
     <ul className={styles.fileFolderTree}>
@@ -491,10 +499,15 @@ function FilesTab({
                   <div className={styles.spaceFileMain}>
                     <b>{file.filename}</b>
                     <small>
-                      {file.folderName ?? "Unfiled"} · {file.status} ·{" "}
+                      {file.folderName ?? "Unfiled"} ·{" "}
                       {relativeTime(file.createdAt)}
                     </small>
                   </div>
+                  <IngestionStatus
+                    status={file.status}
+                    error={file.error}
+                    onRetry={viewerIsEditor && file.status === "failed" ? () => { void retry(file.id); } : undefined}
+                  />
                   <div className={styles.fileLabels}>
                     {file.tags.map((tag) => (
                       <em key={tag}>{tag}</em>
@@ -580,6 +593,7 @@ function PageRow({
         <span className={styles.pageTitle}>{page.title}</span>
         {depth > 0 && <span className={styles.pagePath}>{pagePath(page, pages)}</span>}
       </span>
+      <IngestionStatus status={page.ingestionStatus} error={page.ingestionError} />
       <span className={styles.pageAuthor}>
         <span className={styles.miniAvatar}>{initials(page.author)}</span>
         {page.author}

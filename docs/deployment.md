@@ -30,4 +30,12 @@ Add the full Neon connection URL as the repository secret `NEON_DATABASE_URL`. D
 
 Local development uses Podman PostgreSQL and can use the single `dev` GCP project's Vertex AI and Cloud Storage bucket. Authenticate Application Default Credentials with `gcloud auth application-default login`, then set `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GCS_BUCKET` in `.env`.
 
-Leave every Cloud Tasks setting blank locally. After creating or uploading content, run `npm run ingestion:worker` to process up to ten pending jobs with the local database, dev bucket, and Vertex AI. Cloud Run enables Cloud Tasks only when all task settings are present.
+Leave every Cloud Tasks setting blank locally. The app then leaves ingestion jobs in the local PostgreSQL database instead of sending them to Cloud Tasks. Run `npm run ingestion:watch` in a second terminal while developing; it polls for pending jobs, downloads files from the dev GCS bucket, extracts page/file text, and writes Vertex embeddings into the local pgvector database. Use `npm run ingestion:worker` for a one-shot run of up to ten jobs.
+
+Pages and files show their indexing state (`pending`, `processing`, `ready`, or `failed`) in the UI. Editors can retry failed page or file indexing from the page view or space file list. For a local validation cycle:
+
+1. Start PostgreSQL with `npm run db:up` and apply migrations with `npm run db:migrate`.
+2. Start the app with `npm run dev` and the worker with `npm run ingestion:watch`.
+3. Create or edit a page and wait for its status to become `Indexed`.
+4. Upload a PDF, DOCX, or ODT to a space; confirm it appears in the dev bucket, then wait for `Indexed`.
+5. Ask Docent a question whose answer is in the page/file and verify the cited result comes from the local PostgreSQL data.

@@ -255,6 +255,11 @@ export const pageAttachments = style({ marginTop: '5rem', paddingTop: '2.6rem', 
 export const pageAttachment = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.2rem', padding: '1rem 0', borderBottom: '0.1rem solid rgba(255,255,255,.09)', color: '#9ab1ba', fontSize: '1.3rem' });
 export const pageRevisionList = style({ display: 'flex', flexDirection: 'column', gap: '0.8rem' });
 export const pageRevision = style({ padding: '1rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '1rem', background: '#0f2434', color: '#9ab1ba', fontSize: '1.25rem' });
+export const ingestionStatus = style({ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0, padding: '0.3rem 0.7rem', borderRadius: '99.9rem', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1rem', textTransform: 'capitalize' });
+export const ingestionStatusPending = style({ color: '#9ab1ba', background: 'rgba(154,177,186,.12)' });
+export const ingestionStatusProcessing = style({ color: '#6fa0ff', background: 'rgba(62,123,250,.14)' });
+export const ingestionStatusReady = style({ color: '#1fc8b5', background: 'rgba(31,200,181,.12)' });
+export const ingestionStatusFailed = style({ color: '#ffaaa8', background: 'rgba(235,87,87,.14)' });
 
 globalStyle(`${pageProse} p`, { margin: '0 0 1.6rem' });
 globalStyle(`${pageProse} h2`, { margin: '4rem 0 1.4rem', color: '#eaf3f5', fontFamily: '"Space Grotesk", Inter, sans-serif', fontSize: '2.1rem', fontWeight: 600, scrollMarginTop: 130 });
@@ -319,6 +324,7 @@ globalStyle(`${pageAvatarDropdown} small`, { marginTop: '0.3rem', overflow: 'hid
 globalStyle(`${pageAvatarDropdown} form`, { marginTop: '1rem', borderTop: '0.1rem solid rgba(255,255,255,.09)', paddingTop: '0.9rem' });
 globalStyle(`${pageAvatarDropdown} button`, { width: '100%', padding: '0.7rem 0', border: 0, background: 'transparent', color: '#9ab1ba', cursor: 'pointer', fontFamily: 'inherit', fontSize: '1.2rem', textAlign: 'left' });
 globalStyle(`${pageAvatarDropdown} button:hover`, { color: '#eaf3f5' });
+globalStyle(`${ingestionStatus} button`, { padding: '0rem', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', font: 'inherit', textDecoration: 'underline' });
 globalStyle(`${recentFiles} h2`, { margin: '0rem', color: '#eaf3f5', fontSize: '1.6rem' });
 globalStyle(`${recentFiles} p`, { margin: '0.5rem 0 0', color: '#64828c', fontSize: '1.25rem' });
 globalStyle(`${recentFilesHead} a`, { color: '#1fc8b5', fontSize: '1.25rem', textDecoration: 'none', whiteSpace: 'nowrap' });
