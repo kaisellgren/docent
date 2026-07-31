@@ -13,7 +13,7 @@ import {
   Star,
   Upload,
 } from "lucide-react";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import {
   confirmUpload,
@@ -63,6 +63,10 @@ function SpacePage() {
   const [flatList, setFlatList] = useState(false);
   const [starred, setStarred] = useState(space?.isFavorite ?? false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setStarred(space?.isFavorite ?? false);
+  }, [space?.id, space?.isFavorite]);
 
   if (!viewer || !space)
     return (
