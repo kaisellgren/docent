@@ -34,3 +34,12 @@ export const supportedUploadTypes = {
 } as const;
 
 export type SupportedUploadType = keyof typeof supportedUploadTypes;
+
+export function friendlyFileType(mediaType: string): string {
+  const labels: Record<string, string> = {
+    'application/pdf': 'PDF',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+    'application/vnd.oasis.opendocument.text': 'ODT',
+  };
+  return labels[mediaType] ?? mediaType.split('/').pop()?.split('.').pop()?.toUpperCase() ?? 'File';
+}
