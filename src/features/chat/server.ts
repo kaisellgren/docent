@@ -89,6 +89,6 @@ function citedNumberSet(answer: string): Set<number> {
 }
 
 function citationExcerpt(text: string): string {
-  if (/[\{\}]|(?:@_?text|text:(?:span|p)|_text|#text)/i.test(text)) return '';
+  if (/[{}]|(?:@_?text|text:(?:span|p)|_text|#text)/i.test(text)) return '';
   return text.slice(0, 320).trim();
 }
