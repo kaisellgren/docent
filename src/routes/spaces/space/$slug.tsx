@@ -3,7 +3,7 @@ import { createServerFn, useServerFn } from "@tanstack/react-start";
 import {
   ChevronDown,
   Download,
-  File,
+  File as FileIcon,
   FileText,
   Folder,
   List,
@@ -313,7 +313,7 @@ function RecentFiles({ files, spaceSlug }: { files: SpaceFileData; spaceSlug: st
         <div className={styles.recentFilesGrid}>
           {recent.map((file) => (
             <div className={styles.recentFile} key={file.id}>
-              <File size={15} />
+              <FileIcon size={15} />
               <span className={styles.recentFileDetails}>
                 <b>{file.filename}</b>
                 <small>
