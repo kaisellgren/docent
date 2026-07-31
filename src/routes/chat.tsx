@@ -45,6 +45,7 @@ function ChatPage() {
   const [error, setError] = useState("");
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const autoSentQuestionRef = useRef("");
 
   useEffect(() => {
     setQuestion(q);
@@ -60,7 +61,14 @@ function ChatPage() {
 
   useEffect(() => {
     requestAnimationFrame(() => composerInputRef.current?.focus());
-  }, [conversationId]);
+  }, [conversationId, q]);
+
+  useEffect(() => {
+    const message = q.trim();
+    if (!message || autoSentQuestionRef.current === message) return;
+    autoSentQuestionRef.current = message;
+    void sendQuestion(message);
+  }, [q]);
 
   useEffect(() => {
     const messagesElement = messagesRef.current;
@@ -74,9 +82,7 @@ function ChatPage() {
   const visibleConversations = conversations.filter((conversation) => conversation.title.toLowerCase().includes(conversationQuery.toLowerCase().trim()));
   const references = useMemo(() => uniqueReferences(messages), [messages]);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const message = question.trim();
+  async function sendQuestion(message: string) {
     if (!message || loading) return;
     setLoading(true);
     setError("");
@@ -89,6 +95,11 @@ function ChatPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await sendQuestion(question.trim());
   }
 
   async function newConversation() {
