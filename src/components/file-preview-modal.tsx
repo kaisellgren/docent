@@ -12,6 +12,8 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
     if (!file) return;
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+    const giveUpTimer = setTimeout(() => { if (!cancelled) { timedOut = true; setError("The preview is not ready yet. Retry indexing and try again."); } }, 25000);
     let attempts = 0;
     setUrl(""); setError("");
     const load = async () => {
@@ -20,9 +22,9 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
           fetchPreview({ data: { fileId: file.id } }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Preview request timed out.")), 4000)),
         ]);
-        if (!cancelled) { setError(""); setUrl(result.previewUrl); }
+        if (!cancelled && !timedOut) { setError(""); setUrl(result.previewUrl); }
       } catch {
-        if (cancelled) return;
+        if (cancelled || timedOut) return;
         attempts += 1;
         if (attempts <= 10) {
           setError("Preview is still being generated…");
@@ -33,7 +35,7 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
       }
     };
     void load();
-    return () => { cancelled = true; if (retryTimer) clearTimeout(retryTimer); };
+    return () => { cancelled = true; if (retryTimer) clearTimeout(retryTimer); clearTimeout(giveUpTimer); };
   }, [file?.id]);
   useEffect(() => {
     if (!file) return;
