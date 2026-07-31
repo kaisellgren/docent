@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as styles from "@/styles/app.css";
 
 export type NavigationViewer = { name: string; email: string; avatarUrl?: string | null; isEditor: boolean } | undefined;
@@ -52,8 +52,24 @@ export function AppFooter() {
 
 function AvatarMenu({ viewer }: { viewer: NavigationViewer & { name: string; email: string } }) {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutside(event: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
   return (
-    <div className={styles.pageAvatarMenu}>
+    <div className={styles.pageAvatarMenu} ref={menuRef}>
       <button
         type="button"
         className={styles.pageViewAvatar}
