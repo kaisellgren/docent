@@ -76,8 +76,13 @@ export const askDocent = createServerFn({ method: 'POST' })
     `);
     const context = sources.map((source, index) => `[${index + 1}] ${source.pageTitle ?? source.filename}\n${source.text}`).join('\n\n');
     const answer = await getDocentAgent().generate(`Knowledge:\n${context || 'No indexed knowledge is available.'}\n\nQuestion: ${data.message}`).then((result) => result.text);
+    const citedSources = sources.flatMap((source, index) => citedNumberSet(answer).has(index + 1) ? [{ source, ordinal: index }] : []);
     const message = await pool.one(sql.type(z.object({ id: z.string().uuid() }))`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'assistant', ${answer}) RETURNING id`);
-    for (const [ordinal, source] of sources.entries()) await pool.query(sql.unsafe`INSERT INTO message_citation (message_id, content_chunk_id, ordinal, excerpt) VALUES (${message.id}, ${source.id}, ${ordinal}, ${source.text.slice(0, 500)})`);
+    for (const { source, ordinal } of citedSources) await pool.query(sql.unsafe`INSERT INTO message_citation (message_id, content_chunk_id, ordinal, excerpt) VALUES (${message.id}, ${source.id}, ${ordinal}, ${source.text.slice(0, 500)})`);
     await pool.query(sql.unsafe`UPDATE conversation SET updated_at = now() WHERE id = ${conversation.id}`);
-    return { conversationId: conversation.id, answer, citations: sources.map((source, index) => ({ number: index + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, excerpt: source.text.slice(0, 320) })) };
+    return { conversationId: conversation.id, answer, citations: citedSources.map(({ source, ordinal }) => ({ number: ordinal + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, excerpt: source.text.slice(0, 320) })) };
   });
+
+function citedNumberSet(answer: string): Set<number> {
+  return new Set([...answer.matchAll(/\[(\d+)\]/g)].map((match) => Number(match[1])).filter((number) => Number.isInteger(number) && number > 0));
+}
