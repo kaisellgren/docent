@@ -270,9 +270,9 @@ function MessageBubble({ message }: { message: Messages[number] }) {
 function CitedText({ text, messageId, citations }: { text: string; messageId: string; citations: Citation[] }) {
   const markdown = text.replace(/\[(\d+)\]/g, (match, number: string) => {
     const citation = citations.find((item) => item.number === Number(number));
-    return citation ? `[${number}](#${referenceId(messageId, citation)})` : match;
+    return citation ? "" : match;
   });
-  return <ReactMarkdown components={{ a: ({ href, children }) => <a className={styles.chatInlineCitation} href={href}>{children}</a> }}>{markdown}</ReactMarkdown>;
+  return <ReactMarkdown>{markdown}</ReactMarkdown>;
 }
 
 function ReferenceCard({ reference }: { reference: Reference }) {
