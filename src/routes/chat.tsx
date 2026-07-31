@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
 import { askDocent, deleteConversation, getConversationMessages, getConversations } from "@/features/chat/server";
 import { currentSession } from "@/server/auth";
 import { TopNavigation } from "@/components/navigation";
@@ -267,17 +268,11 @@ function MessageBubble({ message }: { message: Messages[number] }) {
 }
 
 function CitedText({ text, messageId, citations }: { text: string; messageId: string; citations: Citation[] }) {
-  const paragraphs = text.split(/\n\s*\n/);
-  return <>{paragraphs.map((paragraph, index) => <p key={`${messageId}-${index}`}>{renderCitations(paragraph, messageId, citations)}</p>)}</>;
-}
-
-function renderCitations(text: string, messageId: string, citations: Citation[]): ReactNode[] {
-  const parts = text.split(/(\[\d+\])/g);
-  return parts.map((part, index) => {
-    const match = /^\[(\d+)\]$/.exec(part);
-    const citation = match ? citations.find((item) => item.number === Number(match[1])) : undefined;
-    return match && citation ? <a className={styles.chatInlineCitation} href={`#${referenceId(messageId, citation)}`} key={`${messageId}-citation-${index}`}>{part}</a> : part;
+  const markdown = text.replace(/\[(\d+)\]/g, (match, number: string) => {
+    const citation = citations.find((item) => item.number === Number(number));
+    return citation ? `[${number}](#${referenceId(messageId, citation)})` : match;
   });
+  return <ReactMarkdown components={{ a: ({ href, children }) => <a className={styles.chatInlineCitation} href={href}>{children}</a> }}>{markdown}</ReactMarkdown>;
 }
 
 function ReferenceCard({ reference }: { reference: Reference }) {

@@ -390,6 +390,14 @@ globalStyle(`${chatConversationDelete}:hover`, { background: 'rgba(255,100,120,.
 globalStyle(`${chatSuggestion}:hover`, { borderColor: 'rgba(31,200,181,.3)', color: '#eaf3f5' });
 globalStyle(`${chatMessageBody} p`, { margin: '0 0 1rem' });
 globalStyle(`${chatMessageBody} p:last-child`, { marginBottom: '0rem' });
+globalStyle(`${chatMessageBody} h1, ${chatMessageBody} h2, ${chatMessageBody} h3`, { margin: '1.6rem 0 0.8rem', color: '#eaf3f5', fontFamily: '"Space Grotesk", Inter, sans-serif', lineHeight: 1.3 });
+globalStyle(`${chatMessageBody} h1:first-child, ${chatMessageBody} h2:first-child, ${chatMessageBody} h3:first-child`, { marginTop: '0rem' });
+globalStyle(`${chatMessageBody} ul, ${chatMessageBody} ol`, { margin: '0.8rem 0 1.2rem', paddingLeft: '2.2rem' });
+globalStyle(`${chatMessageBody} li`, { marginBottom: '0.5rem' });
+globalStyle(`${chatMessageBody} strong`, { color: '#eaf3f5', fontWeight: 600 });
+globalStyle(`${chatMessageBody} code`, { padding: '0.2rem 0.5rem', borderRadius: '0.4rem', background: '#0a1826', color: '#1fc8b5', fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.9em' });
+globalStyle(`${chatMessageBody} pre`, { overflowX: 'auto', margin: '1rem 0', padding: '1rem 1.2rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '0.8rem', background: '#0a1826' });
+globalStyle(`${chatMessageBody} pre code`, { padding: '0rem', background: 'transparent', color: '#eaf3f5' });
 globalStyle(`${chatComposerButton}:disabled`, { cursor: 'not-allowed', opacity: .45 });
 globalStyle(`${chatComposerButton}, ${chatNewButton}, ${pageViewAvatar}, ${homeSendButton}, ${spacesPrimaryButton}, ${pageIconButton}, ${pageActionButton}, ${detailButton}, ${detailPrimaryButton}`, { transition: 'transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease' });
 globalStyle(`${chatComposerButton}:hover:not(:disabled), ${homeSendButton}:hover, ${spacesPrimaryButton}:hover, ${detailPrimaryButton}:hover`, { background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(31,200,181,.25)', transform: 'translateY(-0.15rem)' });
