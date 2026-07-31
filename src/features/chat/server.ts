@@ -6,9 +6,9 @@ import { db, sql } from '@/server/db';
 import { embedText } from '@/features/ai/vertex';
 import { getDocentAgent } from '@/mastra';
 
-const sourceSchema = z.object({ id: z.string().uuid(), text: z.string(), pageSlug: z.string().nullable(), pageTitle: z.string().nullable(), filename: z.string().nullable() });
+const sourceSchema = z.object({ id: z.string().uuid(), text: z.string(), pageSlug: z.string().nullable(), pageTitle: z.string().nullable(), filename: z.string().nullable(), fileId: z.string().uuid().nullable() });
 const conversationSchema = z.object({ id: z.string().uuid(), title: z.string(), updatedAt: z.string() });
-const citationSchema = z.object({ number: z.number().int().positive(), title: z.string(), slug: z.string().nullable(), excerpt: z.string() });
+const citationSchema = z.object({ number: z.number().int().positive(), title: z.string(), slug: z.string().nullable(), fileId: z.string().uuid().nullable(), excerpt: z.string() });
 const conversationMessageSchema = z.object({ id: z.string().uuid(), role: z.enum(['user', 'assistant']), content: z.string(), createdAt: z.string(), citations: z.array(citationSchema) });
 const conversationIdSchema = z.object({ conversationId: z.string().uuid() });
 
@@ -35,6 +35,7 @@ export const getConversationMessages = createServerFn({ method: 'GET' })
           'number', c.ordinal + 1,
           'title', COALESCE(p.title, f.original_filename, 'Source'),
           'slug', p.slug,
+          'fileId', f.id,
           'excerpt', c.excerpt
         ) ORDER BY c.ordinal) FILTER (WHERE c.id IS NOT NULL), '[]'::jsonb) AS citations
       FROM chat_message m
@@ -70,7 +71,7 @@ export const askDocent = createServerFn({ method: 'POST' })
     await pool.query(sql.unsafe`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'user', ${data.message})`);
     const embedding = await embedText(data.message, 'RETRIEVAL_QUERY');
     const sources = await pool.any(sql.type(sourceSchema)`
-      SELECT c.id, c.text_content AS text, p.slug AS "pageSlug", p.title AS "pageTitle", f.original_filename AS filename
+      SELECT c.id, c.text_content AS text, p.slug AS "pageSlug", p.title AS "pageTitle", f.original_filename AS filename, f.id AS "fileId"
       FROM content_chunk c LEFT JOIN wiki_page p ON p.id = c.page_id LEFT JOIN stored_file f ON f.id = c.file_id
       WHERE (p.deleted_at IS NULL OR p.id IS NULL) AND (f.deleted_at IS NULL OR f.id IS NULL)
       ORDER BY c.embedding <=> ${JSON.stringify(embedding)}::vector LIMIT 6
@@ -81,7 +82,7 @@ export const askDocent = createServerFn({ method: 'POST' })
     const message = await pool.one(sql.type(z.object({ id: z.string().uuid() }))`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'assistant', ${answer}) RETURNING id`);
     for (const { source, ordinal } of citedSources) await pool.query(sql.unsafe`INSERT INTO message_citation (message_id, content_chunk_id, ordinal, excerpt) VALUES (${message.id}, ${source.id}, ${ordinal}, ${source.text.slice(0, 500)})`);
     await pool.query(sql.unsafe`UPDATE conversation SET updated_at = now() WHERE id = ${conversation.id}`);
-    return { conversationId: conversation.id, answer, citations: citedSources.map(({ source, ordinal }) => ({ number: ordinal + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, excerpt: citationExcerpt(source.text) })) };
+    return { conversationId: conversation.id, answer, citations: citedSources.map(({ source, ordinal }) => ({ number: ordinal + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, fileId: source.fileId, excerpt: citationExcerpt(source.text) })) };
   });
 
 function citedNumberSet(answer: string): Set<number> {

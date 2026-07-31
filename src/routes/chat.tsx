@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { askDocent, deleteConversation, getConversationMessages, getConversations } from "@/features/chat/server";
 import { currentSession } from "@/server/auth";
 import { TopNavigation } from "@/components/navigation";
+import { FilePreviewModal } from "@/components/file-preview-modal";
 import * as styles from "@/styles/app.css";
 
 const getViewer = createServerFn({ method: "GET" }).handler(() => currentSession());
@@ -45,6 +46,7 @@ function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [optimisticMessage, setOptimisticMessage] = useState<Messages[number] | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ id: string; filename: string } | null>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const autoSentQuestionRef = useRef("");
@@ -195,7 +197,7 @@ function ChatPage() {
                   </div>
                 </div>
               ) : displayedMessages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble key={message.id} message={message} onPreview={(file) => setPreviewFile(file)} />
               ))}
               {loading && <div className={styles.chatThinking} role="status" aria-live="polite"><span className={styles.chatThinkingIcon}><Sparkles size={15} /></span><span className={styles.chatThinkingDots}><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /></span><span>Docent is weaving an answer…</span></div>}
             </div>
@@ -227,10 +229,11 @@ function ChatPage() {
               <div className={styles.chatReferenceEmpty}><BookOpen size={18} /><p>Sources used by Docent will appear here.</p></div>
             ) : (
               <div className={styles.chatReferenceList}>
-                {references.map((reference) => <ReferenceCard key={referenceId(reference.messageId, reference.citation)} reference={reference} />)}
+                {references.map((reference) => <ReferenceCard key={referenceId(reference.messageId, reference.citation)} reference={reference} onPreview={(file) => setPreviewFile(file)} />)}
               </div>
             )}
           </aside>
+          <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
         </main>
       )}
     </div>
@@ -251,7 +254,7 @@ function ConversationButton({ conversation, active, onClick, onDelete }: { conve
   );
 }
 
-function MessageBubble({ message }: { message: Messages[number] }) {
+function MessageBubble({ message, onPreview }: { message: Messages[number]; onPreview: (file: { id: string; filename: string }) => void }) {
   const assistant = message.role === "assistant";
   return (
     <article className={assistant ? styles.chatMessageAssistant : styles.chatMessageUser}>
@@ -261,7 +264,7 @@ function MessageBubble({ message }: { message: Messages[number] }) {
       </div>
       {assistant && message.citations.length > 0 && (
         <div className={styles.chatMessageReferences}>
-          {message.citations.map((citation) => <a className={styles.chatMessageReferenceLink} key={citation.number} href={`#${referenceId(message.id, citation)}`}>[{citation.number}] {citation.title}</a>)}
+          {message.citations.map((citation) => <a className={styles.chatMessageReferenceLink} key={citation.number} href={`#${referenceId(message.id, citation)}`} onClick={(event) => { if (citation.fileId) { event.preventDefault(); onPreview({ id: citation.fileId, filename: citation.title }); } }}>[{citation.number}] {citation.title}</a>)}
         </div>
       )}
     </article>
@@ -276,12 +279,12 @@ function CitedText({ text, citations }: { text: string; citations: Citation[] })
   return <ReactMarkdown>{markdown}</ReactMarkdown>;
 }
 
-function ReferenceCard({ reference }: { reference: Reference }) {
+function ReferenceCard({ reference, onPreview }: { reference: Reference; onPreview: (file: { id: string; filename: string }) => void }) {
   const { messageId, citation } = reference;
   return (
     <article id={referenceId(messageId, citation)} className={styles.chatReferenceCard}>
       <span className={styles.chatReferenceNumber}>[{citation.number}]</span>
-      {citation.slug ? <a className={styles.chatReferenceLink} href={`/spaces/${citation.slug}`}><strong>{citation.title}</strong></a> : <strong className={styles.chatReferenceLink}>{citation.title}</strong>}
+      {citation.fileId ? <button type="button" className={styles.chatReferenceLinkButton} onClick={() => onPreview({ id: citation.fileId!, filename: citation.title })}><strong>{citation.title}</strong></button> : citation.slug ? <a className={styles.chatReferenceLink} href={`/spaces/${citation.slug}`}><strong>{citation.title}</strong></a> : <strong className={styles.chatReferenceLink}>{citation.title}</strong>}
       {citation.excerpt && <p className={styles.chatReferenceText}>{citation.excerpt}</p>}
     </article>
   );

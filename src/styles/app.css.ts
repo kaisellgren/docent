@@ -84,6 +84,7 @@ export const chatReferenceList = style({ display: 'flex', flexDirection: 'column
 export const chatReferenceCard = style({ scrollMarginTop: '2rem', minWidth: '0rem', padding: '1.2rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '1rem', background: '#0f2434', overflowWrap: 'anywhere' });
 export const chatReferenceNumber = style({ display: 'block', marginBottom: '0.5rem', color: '#1fc8b5', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.05rem' });
 export const chatReferenceLink = style({ color: '#eaf3f5', fontSize: '1.25rem', textDecoration: 'none' });
+export const chatReferenceLinkButton = style([chatReferenceLink, { padding: 0, border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', textAlign: 'left' }]);
 export const chatReferenceText = style({ margin: '0.7rem 0 0', color: '#64828c', fontSize: '1.15rem', lineHeight: 1.5 });
 export const chatReferenceEmpty = style({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '4rem 1rem', color: '#64828c', textAlign: 'center' });
 export const chatUnauthenticated = style({ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '54rem', margin: '10rem auto', padding: '0 2rem', color: '#9ab1ba', textAlign: 'center' });
