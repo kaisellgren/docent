@@ -290,7 +290,7 @@ export const pageViewBrand = style({ display: 'flex', alignItems: 'center', gap:
 export const pageViewBrandMark = style({ width: '2.4rem', height: '2.4rem', color: '#1fc8b5', flexShrink: 0 });
 export const pageViewCenterLinks = style({ position: 'absolute', left: '50%', display: 'flex', alignItems: 'center', height: '100%', gap: '2.8rem', transform: 'translateX(-50%)', '@media': { 'screen and (max-width: 70rem)': { display: 'none' } } });
 export const pageViewNavRight = style({ display: 'flex', alignItems: 'center', gap: '1rem' });
-export const pageViewAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.2rem', height: '3.2rem', borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', fontSize: '1.1rem', fontWeight: 700 });
+export const pageViewAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.2rem', height: '3.2rem', padding: 0, border: '0.1rem solid transparent', borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700 });
 export const pageViewAvatarImage = style({ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' });
 export const appFooter = style({ borderTop: '0.1rem solid rgba(255,255,255,.09)', marginTop: '5rem' });
 export const appFooterInner = style({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.2rem', padding: '3rem 0', color: '#64828c', fontSize: '1.25rem' });
@@ -407,6 +407,7 @@ globalStyle(`${chatComposerButton}, ${chatNewButton}, ${pageViewAvatar}, ${homeS
 globalStyle(`${chatComposerButton}:hover:not(:disabled), ${homeSendButton}:hover, ${spacesPrimaryButton}:hover, ${detailPrimaryButton}:hover`, { background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(31,200,181,.25)', transform: 'translateY(-0.15rem)' });
 globalStyle(`${chatNewButton}:hover, ${pageIconButton}:hover`, { borderColor: 'rgba(31,200,181,.55)', background: 'rgba(31,200,181,.18)', color: '#eaf3f5', boxShadow: '0 0 1.2rem rgba(31,200,181,.2)', transform: 'translateY(-0.1rem)' });
 globalStyle(`${pageViewAvatar}:hover`, { boxShadow: '0 0 1.6rem rgba(62,123,250,.45)', transform: 'scale(1.06)' });
+globalStyle(`${pageViewAvatar}:has(${pageViewAvatarImage})`, { borderColor: 'rgba(31,200,181,.55)', background: 'transparent' });
 globalStyle(`${pageActionButton}:hover`, { borderColor: 'rgba(31,200,181,.45)', background: 'rgba(31,200,181,.12)', color: '#eaf3f5' });
 globalStyle(`${pageActionPrimary}:hover`, { background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(62,123,250,.25)', color: '#04120f', transform: 'translateY(-0.15rem)' });
 globalStyle(`${detailButton}:hover`, { borderColor: 'rgba(31,200,181,.45)', background: 'rgba(31,200,181,.12)', color: '#eaf3f5', transform: 'translateY(-0.1rem)' });
