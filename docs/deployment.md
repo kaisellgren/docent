@@ -16,13 +16,13 @@ After creating a new Google OAuth secret version, increment `DOCENT_OAUTH_SECRET
 
 Before the first run, add these repository variables:
 
-| Variable | Value |
-| --- | --- |
-| `GCP_PROJECT_ID` | `docent-504016` |
+| Variable                         | Value                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GCP_PROJECT_ID`                 | `docent-504016`                                                                               |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/374228818470/locations/global/workloadIdentityPools/docent-github/providers/github` |
-| `GCP_DEPLOYER_SERVICE_ACCOUNT` | `docent-github-deployer@docent-504016.iam.gserviceaccount.com` |
-| `DOCENT_APP_URL` | `https://docent-dev-mslclny3pa-lz.a.run.app` |
-| `DOCENT_OAUTH_SECRET_ROLLOUT` | `2` (increment whenever an OAuth secret is rotated) |
+| `GCP_DEPLOYER_SERVICE_ACCOUNT`   | `docent-github-deployer@docent-504016.iam.gserviceaccount.com`                                |
+| `DOCENT_APP_URL`                 | `https://docent-dev-mslclny3pa-lz.a.run.app`                                                  |
+| `DOCENT_OAUTH_SECRET_ROLLOUT`    | `2` (increment whenever an OAuth secret is rotated)                                           |
 
 Add the full Neon connection URL as the repository secret `NEON_DATABASE_URL`. Do not add the OAuth or application secrets to GitHub: Cloud Run reads those directly from Secret Manager.
 

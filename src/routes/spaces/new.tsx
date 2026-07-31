@@ -1,114 +1,106 @@
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { createServerFn, useServerFn } from "@tanstack/react-start";
-import ReactMarkdown from "react-markdown";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { createPage, getSpacePages, getSpaces } from "@/features/wiki/server";
-import { TopNavigation } from "@/components/navigation";
-import { SpaceIcon } from "@/components/space-icon";
-import { FancySelect } from "@/components/fancy-select";
-import { currentSession } from "@/server/auth";
-import * as styles from "@/styles/app.css";
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { createServerFn, useServerFn } from '@tanstack/react-start'
+import ReactMarkdown from 'react-markdown'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { createPage, getSpacePages, getSpaces } from '@/features/wiki/server'
+import { TopNavigation } from '@/components/navigation'
+import { SpaceIcon } from '@/components/space-icon'
+import { FancySelect } from '@/components/fancy-select'
+import { currentSession } from '@/server/auth'
+import * as styles from '@/styles/app.css'
 
-const getViewer = createServerFn({ method: "GET" }).handler(() => currentSession());
+const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession())
 
-export const Route = createFileRoute("/spaces/new")({
+export const Route = createFileRoute('/spaces/new')({
   validateSearch: (search: Record<string, unknown>) => ({
-    spaceId: typeof search.spaceId === "string" ? search.spaceId : "",
-    parentPageId: typeof search.parentPageId === "string" ? search.parentPageId : "",
+    spaceId: typeof search.spaceId === 'string' ? search.spaceId : '',
+    parentPageId: typeof search.parentPageId === 'string' ? search.parentPageId : '',
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
-    const viewer = await getViewer();
-    if (!viewer) return { viewer, spaces: [], initialPages: [], initialSpaceId: "", initialParentPageId: "" };
-    const spaces = await getSpaces();
-    const initialSpaceId = spaces.some((space) => space.id === deps.spaceId)
-      ? deps.spaceId
-      : (spaces[0]?.id ?? "");
+    const viewer = await getViewer()
+    if (!viewer) return { viewer, spaces: [], initialPages: [], initialSpaceId: '', initialParentPageId: '' }
+    const spaces = await getSpaces()
+    const initialSpaceId = spaces.some((space) => space.id === deps.spaceId) ? deps.spaceId : (spaces[0]?.id ?? '')
     return {
       viewer,
       spaces,
-      initialPages: initialSpaceId
-        ? await getSpacePages({ data: { spaceId: initialSpaceId } })
-      : [],
+      initialPages: initialSpaceId ? await getSpacePages({ data: { spaceId: initialSpaceId } }) : [],
       initialParentPageId: deps.parentPageId,
       initialSpaceId,
-    };
+    }
   },
   component: CreatePage,
-});
+})
 
-type ViewMode = "split" | "write" | "preview";
+type ViewMode = 'split' | 'write' | 'preview'
 
 function CreatePage() {
-  const { viewer, spaces, initialPages, initialSpaceId, initialParentPageId } = Route.useLoaderData();
-  const create = useServerFn(createPage);
-  const loadPages = useServerFn(getSpacePages);
-  const router = useRouter();
-  const editor = useRef<HTMLTextAreaElement>(null);
-  const [title, setTitle] = useState("");
-  const [markdown, setMarkdown] = useState("");
-  const [mode, setMode] = useState<ViewMode>("split");
-  const [error, setError] = useState("");
-  const [publishing, setPublishing] = useState(false);
-  const [spaceId, setSpaceId] = useState(initialSpaceId);
-  const [parentPageId, setParentPageId] = useState(initialParentPageId);
-  const [parentPages, setParentPages] = useState(initialPages);
-  const slug = slugify(title);
+  const { viewer, spaces, initialPages, initialSpaceId, initialParentPageId } = Route.useLoaderData()
+  const create = useServerFn(createPage)
+  const loadPages = useServerFn(getSpacePages)
+  const router = useRouter()
+  const editor = useRef<HTMLTextAreaElement>(null)
+  const [title, setTitle] = useState('')
+  const [markdown, setMarkdown] = useState('')
+  const [mode, setMode] = useState<ViewMode>('split')
+  const [error, setError] = useState('')
+  const [publishing, setPublishing] = useState(false)
+  const [spaceId, setSpaceId] = useState(initialSpaceId)
+  const [parentPageId, setParentPageId] = useState(initialParentPageId)
+  const [parentPages, setParentPages] = useState(initialPages)
+  const slug = slugify(title)
 
   useEffect(() => {
-    setSpaceId(initialSpaceId);
-    setParentPageId(initialParentPageId);
-    setParentPages(initialPages);
-  }, [initialPages, initialParentPageId, initialSpaceId]);
+    setSpaceId(initialSpaceId)
+    setParentPageId(initialParentPageId)
+    setParentPages(initialPages)
+  }, [initialPages, initialParentPageId, initialSpaceId])
   useEffect(() => {
-    setParentPageId(spaceId === initialSpaceId ? initialParentPageId : "");
+    setParentPageId(spaceId === initialSpaceId ? initialParentPageId : '')
     if (!spaceId) {
-      setParentPages([]);
-      return;
+      setParentPages([])
+      return
     }
     if (spaceId === initialSpaceId) {
-      setParentPages(initialPages);
-      return;
+      setParentPages(initialPages)
+      return
     }
-    void loadPages({ data: { spaceId } }).then(setParentPages);
-  }, [initialPages, initialSpaceId, loadPages, spaceId]);
+    void loadPages({ data: { spaceId } }).then(setParentPages)
+  }, [initialPages, initialSpaceId, loadPages, spaceId])
 
-  function insert(before: string, after = "") {
-    const input = editor.current;
-    if (!input) return;
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const selected = markdown.slice(start, end);
-    const next = `${markdown.slice(0, start)}${before}${selected}${after}${markdown.slice(end)}`;
-    setMarkdown(next);
+  function insert(before: string, after = '') {
+    const input = editor.current
+    if (!input) return
+    const start = input.selectionStart
+    const end = input.selectionEnd
+    const selected = markdown.slice(start, end)
+    const next = `${markdown.slice(0, start)}${before}${selected}${after}${markdown.slice(end)}`
+    setMarkdown(next)
     requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(start + before.length, start + before.length + selected.length);
-    });
+      input.focus()
+      input.setSelectionRange(start + before.length, start + before.length + selected.length)
+    })
   }
 
   async function publish(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    setPublishing(true);
+    event.preventDefault()
+    setError('')
+    setPublishing(true)
     try {
       if (!spaceId) {
-        setError("Create a space before publishing a page.");
-        return;
+        setError('Create a space before publishing a page.')
+        return
       }
       const page = await create({
         data: { title, markdown, spaceId, parentPageId: parentPageId || null },
-      });
-      await router.navigate({ to: "/spaces/$slug", params: { slug: page.slug } });
+      })
+      await router.navigate({ to: '/spaces/$slug', params: { slug: page.slug } })
     } catch (cause) {
-      const detail = cause instanceof Error ? cause.message : "";
-      setError(
-        detail
-          ? `Unable to publish this page: ${detail}`
-          : "Unable to publish this page. Please try again.",
-      );
+      const detail = cause instanceof Error ? cause.message : ''
+      setError(detail ? `Unable to publish this page: ${detail}` : 'Unable to publish this page. Please try again.')
     } finally {
-      setPublishing(false);
+      setPublishing(false)
     }
   }
 
@@ -127,7 +119,7 @@ function CreatePage() {
           </a>
         </section>
       </div>
-    );
+    )
   if (!viewer.isEditor)
     return (
       <div className={styles.shell}>
@@ -141,7 +133,7 @@ function CreatePage() {
           <p className={styles.muted}>Only editors can create pages.</p>
         </section>
       </div>
-    );
+    )
 
   return (
     <div>
@@ -153,7 +145,7 @@ function CreatePage() {
               Spaces
             </Link>
             <span>/</span>
-            <span className={styles.pageBreadcrumbCurrent}>{title || "Untitled page"}</span>
+            <span className={styles.pageBreadcrumbCurrent}>{title || 'Untitled page'}</span>
           </div>
           <div className={styles.pageActionGroup}>
             <span className={styles.statusPill}>
@@ -163,12 +155,8 @@ function CreatePage() {
             <Link className={styles.pageActionButton} to="/spaces">
               Cancel
             </Link>
-            <button
-              className={styles.pageActionPrimary}
-              form="create-page"
-              disabled={publishing || !spaceId}
-            >
-              {publishing ? "Publishing…" : "Publish"}
+            <button className={styles.pageActionPrimary} form="create-page" disabled={publishing || !spaceId}>
+              {publishing ? 'Publishing…' : 'Publish'}
             </button>
           </div>
         </div>
@@ -187,8 +175,10 @@ function CreatePage() {
             />
             <div className={styles.editorMeta}>
               <span className={styles.editorSpace}>
-                {spaces.find((space) => space.id === spaceId) && <SpaceIcon name={spaces.find((space) => space.id === spaceId)!.icon} size={13} />}
-                {spaces.find((space) => space.id === spaceId)?.name ?? "Choose a space"}
+                {spaces.find((space) => space.id === spaceId) && (
+                  <SpaceIcon name={spaces.find((space) => space.id === spaceId)!.icon} size={13} />
+                )}
+                {spaces.find((space) => space.id === spaceId)?.name ?? 'Choose a space'}
               </span>
               <span>Draft</span>
               <span>·</span>
@@ -196,35 +186,20 @@ function CreatePage() {
             </div>
             <div className={styles.editorToolbar}>
               <div className={styles.formatGroup}>
-                <button
-                  type="button"
-                  className={styles.formatButton}
-                  onClick={() => insert("**", "**")}
-                  title="Bold"
-                >
+                <button type="button" className={styles.formatButton} onClick={() => insert('**', '**')} title="Bold">
                   <b>B</b>
                 </button>
-                <button
-                  type="button"
-                  className={styles.formatButton}
-                  onClick={() => insert("_", "_")}
-                  title="Italic"
-                >
+                <button type="button" className={styles.formatButton} onClick={() => insert('_', '_')} title="Italic">
                   <i>i</i>
                 </button>
-                <button
-                  type="button"
-                  className={styles.formatButton}
-                  onClick={() => insert("## ")}
-                  title="Heading"
-                >
+                <button type="button" className={styles.formatButton} onClick={() => insert('## ')} title="Heading">
                   H
                 </button>
                 <span className={styles.formatDivider} />
                 <button
                   type="button"
                   className={styles.formatButton}
-                  onClick={() => insert("- ")}
+                  onClick={() => insert('- ')}
                   title="Bulleted list"
                 >
                   ≡
@@ -232,30 +207,20 @@ function CreatePage() {
                 <button
                   type="button"
                   className={styles.formatButton}
-                  onClick={() => insert("[", "](https://)")}
+                  onClick={() => insert('[', '](https://)')}
                   title="Link"
                 >
                   ⛓
                 </button>
-                <button
-                  type="button"
-                  className={styles.formatButton}
-                  onClick={() => insert("`", "`")}
-                  title="Code"
-                >
+                <button type="button" className={styles.formatButton} onClick={() => insert('`', '`')} title="Code">
                   &lt;/&gt;
                 </button>
-                <button
-                  type="button"
-                  className={styles.formatButton}
-                  onClick={() => insert("> ")}
-                  title="Quote"
-                >
+                <button type="button" className={styles.formatButton} onClick={() => insert('> ')} title="Quote">
                   “
                 </button>
               </div>
               <div className={styles.viewSwitch}>
-                {(["split", "write", "preview"] as const).map((view) => (
+                {(['split', 'write', 'preview'] as const).map((view) => (
                   <button
                     type="button"
                     className={mode === view ? styles.viewSwitchActive : styles.viewSwitchButton}
@@ -268,7 +233,7 @@ function CreatePage() {
               </div>
             </div>
             <div
-              className={`${styles.editorPanes} ${mode === "write" ? styles.editorPanesWrite : mode === "preview" ? styles.editorPanesPreview : ""}`}
+              className={`${styles.editorPanes} ${mode === 'write' ? styles.editorPanesWrite : mode === 'preview' ? styles.editorPanesPreview : ''}`}
             >
               <div className={`${styles.editorPane} ${styles.editorWritePane}`}>
                 <div className={styles.editorPaneLabel}>Markdown body</div>
@@ -286,11 +251,7 @@ function CreatePage() {
               <div className={`${styles.editorPane} ${styles.editorPreviewPane}`}>
                 <div className={styles.editorPaneLabel}>Preview</div>
                 <div className={styles.editorPreview}>
-                  {markdown ? (
-                    <ReactMarkdown>{markdown}</ReactMarkdown>
-                  ) : (
-                    <p>Markdown preview will appear here.</p>
-                  )}
+                  {markdown ? <ReactMarkdown>{markdown}</ReactMarkdown> : <p>Markdown preview will appear here.</p>}
                 </div>
               </div>
             </div>
@@ -305,7 +266,15 @@ function CreatePage() {
               <h2 className={styles.editorSideCardTitle}>Page settings</h2>
               <div className={styles.editorField}>
                 <label htmlFor="space">Space</label>
-                <FancySelect value={spaceId} onChange={setSpaceId} disabled={publishing} options={[{ value: "", label: "Choose a space" }, ...spaces.map((space) => ({ value: space.id, label: space.name }))]} />
+                <FancySelect
+                  value={spaceId}
+                  onChange={setSpaceId}
+                  disabled={publishing}
+                  options={[
+                    { value: '', label: 'Choose a space' },
+                    ...spaces.map((space) => ({ value: space.id, label: space.name })),
+                  ]}
+                />
                 {spaces.length === 0 && (
                   <Link className={styles.editorCreateSpaceLink} to="/spaces">
                     Create a space first
@@ -314,7 +283,15 @@ function CreatePage() {
               </div>
               <div className={styles.editorField}>
                 <label htmlFor="parent-page">Parent page</label>
-                <FancySelect value={parentPageId} onChange={setParentPageId} disabled={publishing || !spaceId} options={[{ value: "", label: "None (top level)" }, ...parentPages.map((page) => ({ value: page.id, label: page.title }))]} />
+                <FancySelect
+                  value={parentPageId}
+                  onChange={setParentPageId}
+                  disabled={publishing || !spaceId}
+                  options={[
+                    { value: '', label: 'None (top level)' },
+                    ...parentPages.map((page) => ({ value: page.id, label: page.title })),
+                  ]}
+                />
               </div>
               <div className={styles.editorField}>
                 <span>Slug</span>
@@ -325,8 +302,7 @@ function CreatePage() {
               <div className={styles.aiHint}>
                 <span>✦</span>
                 <p className={styles.aiHintText}>
-                  Docent will index this page the moment you publish, so it can be cited in chat
-                  answers right away.
+                  Docent will index this page the moment you publish, so it can be cited in chat answers right away.
                 </p>
               </div>
             </div>
@@ -334,7 +310,7 @@ function CreatePage() {
         </form>
       </main>
     </div>
-  );
+  )
 }
 
 function slugify(value: string) {
@@ -342,7 +318,7 @@ function slugify(value: string) {
     value
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "generated-from-title"
-  );
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'generated-from-title'
+  )
 }

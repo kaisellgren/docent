@@ -1,60 +1,54 @@
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { createServerFn, useServerFn } from "@tanstack/react-start";
-import { Grid2X2, List, Plus, Search, Star } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
-import { TopNavigation } from "@/components/navigation";
-import { FancySelect } from "@/components/fancy-select";
-import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
-import { createSpace, getSpaces } from "@/features/wiki/server";
-import { currentSession } from "@/server/auth";
-import * as styles from "@/styles/app.css";
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { createServerFn, useServerFn } from '@tanstack/react-start'
+import { Grid2X2, List, Plus, Search, Star } from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { TopNavigation } from '@/components/navigation'
+import { FancySelect } from '@/components/fancy-select'
+import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from '@/components/space-icon'
+import { createSpace, getSpaces } from '@/features/wiki/server'
+import { currentSession } from '@/server/auth'
+import * as styles from '@/styles/app.css'
 
-const getViewer = createServerFn({ method: "GET" }).handler(() => currentSession());
+const getViewer = createServerFn({ method: 'GET' }).handler(() => currentSession())
 
-export const Route = createFileRoute("/spaces/")({
+export const Route = createFileRoute('/spaces/')({
   loader: async () => {
-    const viewer = await getViewer();
-    return { viewer, spaces: viewer ? await getSpaces() : [] };
+    const viewer = await getViewer()
+    return { viewer, spaces: viewer ? await getSpaces() : [] }
   },
   component: SpacesIndex,
-});
+})
 
 function SpacesIndex() {
-  const { viewer, spaces } = Route.useLoaderData();
-  const router = useRouter();
-  const create = useServerFn(createSpace);
-  const [query, setQuery] = useState("");
-  const [listView, setListView] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState<SpaceIconName>("book-open");
-  const [error, setError] = useState("");
+  const { viewer, spaces } = Route.useLoaderData()
+  const router = useRouter()
+  const create = useServerFn(createSpace)
+  const [query, setQuery] = useState('')
+  const [listView, setListView] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [icon, setIcon] = useState<SpaceIconName>('book-open')
+  const [error, setError] = useState('')
   const filteredSpaces = useMemo(
     () =>
-      spaces.filter((space) =>
-        `${space.name} ${space.description}`.toLowerCase().includes(query.toLowerCase().trim()),
-      ),
+      spaces.filter((space) => `${space.name} ${space.description}`.toLowerCase().includes(query.toLowerCase().trim())),
     [query, spaces],
-  );
+  )
 
   async function submit(event: FormEvent) {
-    event.preventDefault();
-    setError("");
+    event.preventDefault()
+    setError('')
     try {
-      await create({ data: { name, description, icon } });
-      setName("");
-      setDescription("");
-      setIcon("book-open");
-      setCreating(false);
-      await router.invalidate();
+      await create({ data: { name, description, icon } })
+      setName('')
+      setDescription('')
+      setIcon('book-open')
+      setCreating(false)
+      await router.invalidate()
     } catch (cause) {
-      const detail = cause instanceof Error ? cause.message : "";
-      setError(
-        detail
-          ? `Unable to create this space: ${detail}`
-          : "Unable to create this space. Please try again.",
-      );
+      const detail = cause instanceof Error ? cause.message : ''
+      setError(detail ? `Unable to create this space: ${detail}` : 'Unable to create this space. Please try again.')
     }
   }
 
@@ -72,14 +66,14 @@ function SpacesIndex() {
                 type="button"
                 className={styles.pageActionPrimary}
                 onClick={() => {
-                  setError("");
-                  setCreating((value) => !value);
+                  setError('')
+                  setCreating((value) => !value)
                 }}
               >
                 <Plus size={13} />
                 Create space
               </button>
-              <Link className={styles.pageActionPrimary} to="/spaces/new" search={{ spaceId: "", parentPageId: "" }}>
+              <Link className={styles.pageActionPrimary} to="/spaces/new" search={{ spaceId: '', parentPageId: '' }}>
                 <Plus size={13} />
                 Create page
               </Link>
@@ -136,15 +130,17 @@ function SpacesIndex() {
               />
               <label className={styles.spacesIconField}>
                 <span>Icon</span>
-                <FancySelect value={icon} onChange={(value) => setIcon(value as SpaceIconName)} options={SPACE_ICON_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} />
+                <FancySelect
+                  value={icon}
+                  onChange={(value) => setIcon(value as SpaceIconName)}
+                  options={SPACE_ICON_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                />
               </label>
-              <span className={styles.spaceIcon}><SpaceIcon name={icon} size={20} /></span>
+              <span className={styles.spaceIcon}>
+                <SpaceIcon name={icon} size={20} />
+              </span>
               <button className={styles.primaryButton}>Create space</button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => setCreating(false)}
-              >
+              <button type="button" className={styles.secondaryButton} onClick={() => setCreating(false)}>
                 Cancel
               </button>
               {error && (
@@ -187,7 +183,7 @@ function SpacesIndex() {
             </section>
           ) : (
             <>
-              <div className={`${styles.spacesGrid} ${listView ? styles.spacesGridList : ""}`}>
+              <div className={`${styles.spacesGrid} ${listView ? styles.spacesGridList : ''}`}>
                 {filteredSpaces.map((space) => (
                   <Link
                     className={styles.spaceCard}
@@ -199,37 +195,40 @@ function SpacesIndex() {
                       <span className={styles.spaceIcon}>
                         <SpaceIcon name={space.icon} />
                       </span>
-                      <span className={styles.spaceKey}>
-                        {space.slug.slice(0, 3).toUpperCase()}
-                      </span>
-                      {space.isFavorite && <Star className={styles.spaceFavorite} size={15} fill="currentColor" aria-label="Favorite space" />}
+                      <span className={styles.spaceKey}>{space.slug.slice(0, 3).toUpperCase()}</span>
+                      {space.isFavorite && (
+                        <Star
+                          className={styles.spaceFavorite}
+                          size={15}
+                          fill="currentColor"
+                          aria-label="Favorite space"
+                        />
+                      )}
                     </div>
                     <h2>{space.name}</h2>
                     <p>{space.description}</p>
                     <div className={styles.spaceCardFoot}>
                       <span>
-                        {space.pageCount} {space.pageCount === 1 ? "page" : "pages"}
+                        {space.pageCount} {space.pageCount === 1 ? 'page' : 'pages'}
                       </span>
                       <span>updated {relativeTime(space.updatedAt)}</span>
                     </div>
                   </Link>
                 ))}
               </div>
-              {filteredSpaces.length === 0 && (
-                <p className={styles.muted}>No spaces match “{query}”.</p>
-              )}
+              {filteredSpaces.length === 0 && <p className={styles.muted}>No spaces match “{query}”.</p>}
             </>
           )}
         </main>
       )}
     </div>
-  );
+  )
 }
 
 function relativeTime(value: string) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`
 }

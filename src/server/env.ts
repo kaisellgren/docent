@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
-const blankAsUndefined = (value: unknown) => typeof value === 'string' && value.trim() === '' ? undefined : value;
-const optionalString = z.preprocess(blankAsUndefined, z.string().optional());
-const optionalUrl = z.preprocess(blankAsUndefined, z.string().url().optional());
-const optionalEmail = z.preprocess(blankAsUndefined, z.string().email().optional());
+const blankAsUndefined = (value: unknown) => (typeof value === 'string' && value.trim() === '' ? undefined : value)
+const optionalString = z.preprocess(blankAsUndefined, z.string().optional())
+const optionalUrl = z.preprocess(blankAsUndefined, z.string().url().optional())
+const optionalEmail = z.preprocess(blankAsUndefined, z.string().email().optional())
 
 const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:5173'),
@@ -23,16 +23,21 @@ const envSchema = z.object({
   CLOUD_RUN_TASK_URL: optionalUrl,
   CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL: optionalEmail,
   CLOUD_RUN_TASK_AUDIENCE: optionalUrl,
-});
+})
 
-export type Env = z.infer<typeof envSchema>;
-let parsedEnv: Env | undefined;
+export type Env = z.infer<typeof envSchema>
+let parsedEnv: Env | undefined
 
 export function env(): Env {
-  parsedEnv ??= envSchema.parse(process.env);
-  return parsedEnv;
+  parsedEnv ??= envSchema.parse(process.env)
+  return parsedEnv
 }
 
 export function editorEmails(): Set<string> {
-  return new Set(env().EDITOR_EMAILS.split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
+  return new Set(
+    env()
+      .EDITOR_EMAILS.split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  )
 }
