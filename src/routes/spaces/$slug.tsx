@@ -54,6 +54,7 @@ function PageView() {
   const [pendingAction, setPendingAction] = useState('');
   const [attachmentFileId, setAttachmentFileId] = useState('');
   const [attachmentFilename, setAttachmentFilename] = useState('');
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   useEffect(() => { setTitle(page.title); setMarkdown(page.markdown); }, [page.revisionId, page.title, page.markdown]);
 
   async function run(action: string, work: () => Promise<void>) {
@@ -79,18 +80,21 @@ function PageView() {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const selected = form.get('file');
-    if (!(selected instanceof File)) return;
-    const mediaType = selected.type || mediaTypeForFilename(selected.name);
-    if (!mediaType) { setError('Choose a PDF, DOCX, or ODT file.'); return; }
+    const selectedFiles = attachmentFiles.length ? attachmentFiles : form.getAll('file').filter((value): value is File => value instanceof File && value.size > 0);
+    if (selectedFiles.length === 0) return;
     await run('upload this file', async () => {
-      const intent = await uploadIntent({ data: { filename: selected.name, mediaType, sizeBytes: selected.size, folderId: null, tagNames: [], spaceId: page.spaceId, pageId: page.id } });
-      const response = await fetch(intent.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mediaType }, body: selected });
-      if (!response.ok) throw new Error('The file could not be uploaded to storage.');
-      await confirm({ data: { fileId: intent.fileId } });
+      for (const selected of selectedFiles) {
+        const mediaType = selected.type || mediaTypeForFilename(selected.name);
+        if (!mediaType) continue;
+        const intent = await uploadIntent({ data: { filename: selected.name, mediaType, sizeBytes: selected.size, folderId: null, tagNames: [], spaceId: page.spaceId, pageId: page.id } });
+        const response = await fetch(intent.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mediaType }, body: selected });
+        if (!response.ok) throw new Error(`The file ${selected.name} could not be uploaded to storage.`);
+        await confirm({ data: { fileId: intent.fileId } });
+      }
       setNotice('File attached and queued for indexing.');
       formElement.reset();
       setAttachmentFilename('');
+      setAttachmentFiles([]);
       await router.invalidate();
     });
   }
@@ -129,7 +133,7 @@ function PageView() {
     <main className={`${styles.shell} ${styles.pageViewBody}`}>
       <PageTree pages={spacePages} currentId={page.id} spaceSlug={page.spaceSlug} spaceIcon={page.spaceIcon} />
       <article className={styles.pageArticle}>
-        {viewer.isEditor && <form className={styles.fileUploadForm} onSubmit={uploadAttachment}><label className={styles.detailButton}><Upload size={14} /><span className={styles.fileUploadName}>{attachmentFilename || 'Attach file'}</span><input name="file" type="file" accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text" onChange={(event) => setAttachmentFilename(event.target.files?.[0]?.name ?? '')} required /></label><button className={styles.detailPrimaryButton}>Upload</button></form>}
+        {viewer.isEditor && <form className={styles.fileUploadForm} onSubmit={uploadAttachment}><label className={styles.detailButton} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = [...event.dataTransfer.files]; setAttachmentFiles(files); setAttachmentFilename(files.map((file) => file.name).join(', ')); }}><Upload size={14} /><span className={styles.fileUploadName}>{attachmentFilename || 'Attach files'}</span><input name="file" type="file" multiple accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text" onChange={(event) => { const files = [...(event.target.files ?? [])]; setAttachmentFiles(files); setAttachmentFilename(files.map((file) => file.name).join(', ')); }} required /></label><button className={styles.detailPrimaryButton}>Upload</button></form>}
         <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}><SpaceIcon name={page.spaceIcon} size={14} /> {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span><IngestionStatus status={page.ingestionStatus} error={page.ingestionError} onRetry={viewer.isEditor && page.ingestionStatus === 'failed' ? () => { void retryIndexing(); } : undefined} /></div></div>
         {editing ? <form className={styles.pageEditForm} onSubmit={save}><input className={styles.pageEditTitle} value={title} onChange={(event) => setTitle(event.target.value)} disabled={Boolean(pendingAction)} required /><textarea className={styles.pageEditTextarea} value={markdown} onChange={(event) => setMarkdown(event.target.value)} disabled={Boolean(pendingAction)} required /><div className={styles.actions}><button className={styles.pageActionPrimary} disabled={Boolean(pendingAction)}>{isPending('save this revision') ? 'Saving…' : 'Save revision'}</button><button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { setEditing(false); setTitle(page.title); setMarkdown(page.markdown); }}>Cancel</button></div></form> : <div className={styles.pageProse}><ReactMarkdown components={{ h2: ({ children }) => <h2 id={headingId(children)}>{children}</h2>, h3: ({ children }) => <h3 id={headingId(children)}>{children}</h3> }}>{page.markdown}</ReactMarkdown></div>}
         {notice && <p className={styles.feedbackSuccess} role="status">{notice}</p>}{error && <p className={styles.feedbackError} role="alert">{error}</p>}

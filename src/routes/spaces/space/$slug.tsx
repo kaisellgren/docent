@@ -369,6 +369,7 @@ function FilesTab({
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderParam ?? null);
   const [uploadFolderId, setUploadFolderId] = useState("");
   const [uploadFilename, setUploadFilename] = useState("");
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
@@ -396,34 +397,25 @@ function FilesTab({
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const selected = form.get("file");
-    if (!(selected instanceof File)) return;
-    const mediaType = selected.type || mediaTypeForFilename(selected.name);
-    if (!mediaType) return;
+    const selectedFiles = uploadFiles.length ? uploadFiles : form.getAll("file").filter((value): value is File => value instanceof File && value.size > 0);
+    if (selectedFiles.length === 0) return;
     const tags = String(form.get("tags") ?? "")
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-    const intent = await uploadIntent({
-      data: {
-        filename: selected.name,
-        mediaType,
-        sizeBytes: selected.size,
-        folderId: uploadFolderId || null,
-        tagNames: tags,
-        spaceId,
-      },
-    });
-    await fetch(intent.uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": selected.type },
-      body: selected,
-    });
-    await confirm({ data: { fileId: intent.fileId } });
+    for (const selected of selectedFiles) {
+      const mediaType = selected.type || mediaTypeForFilename(selected.name);
+      if (!mediaType) continue;
+      const intent = await uploadIntent({ data: { filename: selected.name, mediaType, sizeBytes: selected.size, folderId: uploadFolderId || null, tagNames: tags, spaceId } });
+      const response = await fetch(intent.uploadUrl, { method: "PUT", headers: { "Content-Type": mediaType }, body: selected });
+      if (!response.ok) throw new Error(`Could not upload ${selected.name}.`);
+      await confirm({ data: { fileId: intent.fileId } });
+    }
     setNotice("Upload accepted and queued for indexing.");
     formElement.reset();
     setUploadFolderId("");
     setUploadFilename("");
+    setUploadFiles([]);
     window.location.reload();
   }
   async function addFolderSubmit(event: FormEvent<HTMLFormElement>) {
@@ -548,15 +540,15 @@ function FilesTab({
             <h3>{selectedFolderId ? folderById.get(selectedFolderId)?.name ?? "Folder" : "Space"} <span>({visibleFiles.length})</span></h3>
             {viewerIsEditor && (
               <form onSubmit={upload} className={styles.fileUploadForm}>
-                <label className={styles.detailButton}>
+                <label className={styles.detailButton} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = [...event.dataTransfer.files]; setUploadFiles(files); setUploadFilename(files.map((file) => file.name).join(", ")); }}>
                   <Upload size={14} />
                   <span className={styles.fileUploadName}>{uploadFilename || "Choose file"}</span>
                   <input
                     name="file"
                     type="file"
                     accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text"
-                    onChange={(event) => setUploadFilename(event.target.files?.[0]?.name ?? "")}
-                    required
+                    multiple
+                    onChange={(event) => { const files = [...(event.target.files ?? [])]; setUploadFiles(files); setUploadFilename(files.map((file) => file.name).join(", ")); }}
                   />
                 </label>
                 <input name="tags" placeholder="labels, comma separated" />
