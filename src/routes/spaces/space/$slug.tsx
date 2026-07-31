@@ -358,16 +358,7 @@ function FilesTab({
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
   const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files.filter((file) => !file.folderId);
-  const listingFolders = selectedFolderId
-    ? folders.filter((folder) => {
-      let current = folder.parentId;
-      while (current) {
-        if (current === selectedFolderId) return true;
-        current = folderById.get(current)?.parentId ?? null;
-      }
-      return false;
-    })
-    : folders;
+  const listingFolders = folders.filter((folder) => folder.parentId === selectedFolderId);
   const folderPath = (folder: SpaceFolderData[number]) => {
     const names = [folder.name];
     let current = folder.parentId;
