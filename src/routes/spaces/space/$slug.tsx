@@ -7,7 +7,7 @@ import {
   FileText,
   Folder,
   List,
-  MoreHorizontal,
+  Pencil,
   Plus,
   Search,
   Star,
@@ -28,9 +28,9 @@ import {
   deleteFile,
   retryFileIngestion,
 } from "@/features/files/server";
-import { getSpace, getSpacePages, toggleSpaceFavorite } from "@/features/wiki/server";
+import { getSpace, getSpacePages, toggleSpaceFavorite, updateSpace } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
-import { SpaceIcon } from "@/components/space-icon";
+import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
 import { FancySelect } from "@/components/fancy-select";
 import { IngestionStatus } from "@/components/ingestion-status";
 import { currentSession } from "@/server/auth";
@@ -61,13 +61,19 @@ export const Route = createFileRoute("/spaces/space/$slug")({
 
 function SpacePage() {
   const { viewer, space, pages, files, folders } = Route.useLoaderData();
+  const router = useRouter();
   const toggleFavorite = useServerFn(toggleSpaceFavorite);
+  const saveSpace = useServerFn(updateSpace);
   const { tab } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"tree" | "updated" | "name">("tree");
   const [flatList, setFlatList] = useState(false);
   const [starred, setStarred] = useState(space?.isFavorite ?? false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [editingSpace, setEditingSpace] = useState(false);
+  const [spaceName, setSpaceName] = useState(space?.name ?? "");
+  const [spaceDescription, setSpaceDescription] = useState(space?.description ?? "");
+  const [spaceIcon, setSpaceIcon] = useState<SpaceIconName>(space?.icon ?? "book-open");
 
   useEffect(() => {
     setStarred(space?.isFavorite ?? false);
@@ -120,6 +126,13 @@ function SpacePage() {
       setStarred(!next);
     }
   }
+  async function saveSpaceChanges(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!space) return;
+    await saveSpace({ data: { spaceId: space.id, name: spaceName, description: spaceDescription, icon: spaceIcon } });
+    setEditingSpace(false);
+    await router.invalidate();
+  }
   const tabLink = (nextTab: "pages" | "files") => ({
     to: "/spaces/space/$slug" as const,
     params: { slug: space.slug },
@@ -158,14 +171,18 @@ function SpacePage() {
                 Create page
               </Link>
             )}
-            <button type="button" className={styles.pageIconButton} aria-label="More space actions">
-              <MoreHorizontal size={15} />
-            </button>
+            {viewer.isEditor && <button type="button" className={styles.pageActionButton} onClick={() => setEditingSpace((value) => !value)}><Pencil size={13} />{editingSpace ? "Cancel" : "Edit space"}</button>}
           </div>
         </div>
       </div>
       <main className={styles.shell}>
         <section className={styles.spaceHeader}>
+          {editingSpace && <form className={styles.spaceCreateForm} onSubmit={saveSpaceChanges}>
+            <input className={styles.spacesFormInput} value={spaceName} onChange={(event) => setSpaceName(event.target.value)} aria-label="Space name" required />
+            <input className={styles.spacesFormInput} value={spaceDescription} onChange={(event) => setSpaceDescription(event.target.value)} aria-label="Space description" required />
+            <FancySelect value={spaceIcon} onChange={(value) => setSpaceIcon(value as SpaceIconName)} options={SPACE_ICON_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} />
+            <button className={styles.detailPrimaryButton}>Save changes</button>
+          </form>}
           <div className={styles.spaceHeadTop}>
             <div className={styles.spaceIdentity}>
               <div className={styles.spaceLargeIcon}><SpaceIcon name={space.icon} size={26} /></div>

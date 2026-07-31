@@ -108,6 +108,18 @@ export const createSpace = createServerFn({ method: 'POST' })
     `);
   });
 
+export const updateSpace = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => spaceInputSchema.extend({ spaceId: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    return (await db()).one(sql.type(spaceSchema)`
+      UPDATE wiki_space
+      SET name = ${data.name}, description = ${data.description}, icon = ${data.icon}, updated_at = now()
+      WHERE id = ${data.spaceId} AND deleted_at IS NULL
+      RETURNING id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt", false AS "isFavorite"
+    `);
+  });
+
 export const getPage = createServerFn({ method: 'GET' })
   .validator((data: unknown) => slugSchema.parse(data))
   .handler(async ({ data }) => {
