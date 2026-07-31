@@ -343,3 +343,17 @@ export const getDownloadUrl = createServerFn({ method: 'GET' })
     const [downloadUrl] = await bucket().file(file.objectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 15 * 60 * 1000, responseDisposition: `attachment; filename="${filename}"` });
     return { downloadUrl };
   });
+
+export const getPreviewUrl = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => fileIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    const file = await (await db()).maybeOne(sql.type(z.object({ previewObjectKey: z.string() }))`
+      SELECT preview_object_key AS "previewObjectKey"
+      FROM stored_file
+      WHERE id = ${data.fileId} AND deleted_at IS NULL AND preview_object_key IS NOT NULL AND preview_status = 'ready'
+    `);
+    if (!file) throw new Response('A preview is not available for this file yet.', { status: 404 });
+    const [previewUrl] = await bucket().file(file.previewObjectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 10 * 60 * 1000, responseDisposition: 'inline', responseType: 'text/html' });
+    return { previewUrl };
+  });
