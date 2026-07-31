@@ -129,8 +129,21 @@ export const createUploadIntent = createServerFn({ method: 'POST' })
         `);
       }
     });
-    const [uploadUrl] = await bucket().file(objectKey).getSignedUrl({ version: 'v4', action: 'write', expires: Date.now() + 15 * 60 * 1000, contentType: data.mediaType });
-    return { fileId, uploadUrl };
+    try {
+      const [uploadUrl] = await bucket().file(objectKey).getSignedUrl({ version: 'v4', action: 'write', expires: Date.now() + 15 * 60 * 1000, contentType: data.mediaType });
+      return { fileId, uploadUrl };
+    } catch (cause) {
+      await (await db()).transaction(async (transaction) => {
+        await transaction.query(sql.unsafe`DELETE FROM page_file WHERE file_id = ${fileId}`);
+        await transaction.query(sql.unsafe`DELETE FROM file_tag WHERE file_id = ${fileId}`);
+        await transaction.query(sql.unsafe`DELETE FROM stored_file WHERE id = ${fileId}`);
+      });
+      const detail = cause instanceof Error ? cause.message : 'Unknown signing error';
+      if (detail.includes('client_email')) {
+        throw new Error('Google Cloud credentials cannot sign upload URLs. For local uploads, use Application Default Credentials with service-account impersonation (see docs/deployment.md).');
+      }
+      throw new Error(`Could not create a Google Cloud Storage upload URL: ${detail}`);
+    }
   });
 
 export const confirmUpload = createServerFn({ method: 'POST' })
