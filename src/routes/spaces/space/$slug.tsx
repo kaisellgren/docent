@@ -6,7 +6,6 @@ import {
   File as FileIcon,
   FileText,
   Folder,
-  List,
   Pencil,
   Plus,
   Search,
@@ -68,7 +67,6 @@ function SpacePage() {
   const { tab } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"tree" | "updated" | "name">("tree");
-  const [flatList, setFlatList] = useState(false);
   const [starred, setStarred] = useState(space?.isFavorite ?? false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
@@ -279,24 +277,6 @@ function SpacePage() {
                 </h2>
                 <div className={styles.contentControls}>
                   <FancySelect value={sort} onChange={(value) => setSort(value as typeof sort)} options={[{ value: "tree", label: "Sort: Tree order" }, { value: "updated", label: "Sort: Recently updated" }, { value: "name", label: "Sort: Name A–Z" }]} className={styles.detailSort} />
-                  <div className={styles.detailViewToggle}>
-                    <button
-                      type="button"
-                      className={!flatList ? styles.detailViewActive : styles.detailViewButton}
-                      onClick={() => setFlatList(false)}
-                      aria-label="Tree order"
-                    >
-                      <List size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      className={flatList ? styles.detailViewActive : styles.detailViewButton}
-                      onClick={() => setFlatList(true)}
-                      aria-label="Flat list"
-                    >
-                      <List size={13} />
-                    </button>
-                  </div>
                 </div>
               </div>
               <div className={styles.pageList}>
@@ -305,7 +285,8 @@ function SpacePage() {
                     key={page.id}
                     page={page}
                     pages={pages}
-                    depth={flatList ? 0 : pageDepth(page, pages)}
+                    depth={sort === "tree" ? pageDepth(page, pages) : 0}
+                    showPath={sort !== "tree"}
                   />
                 ))}
                 {matchingPages.length === 0 && (
@@ -696,10 +677,12 @@ function PageRow({
   page,
   pages,
   depth,
+  showPath,
 }: {
   page: SpacePageItem;
   pages: SpacePageData;
   depth: number;
+  showPath: boolean;
 }) {
   return (
     <Link
@@ -711,7 +694,7 @@ function PageRow({
       <FileText className={styles.pageDocumentIcon} size={15} />
       <span className={styles.pageMain}>
         <span className={styles.pageTitle}>{page.title}</span>
-        {depth > 0 && <span className={styles.pagePath}>{pagePath(page, pages)}</span>}
+        {showPath && page.parentPageId && <span className={styles.pagePath}>{pagePath(page, pages)}</span>}
       </span>
       <IngestionStatus status={page.ingestionStatus} error={page.ingestionError} />
       <span className={styles.pageAuthor}>
