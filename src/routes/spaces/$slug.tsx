@@ -114,12 +114,13 @@ function PageView() {
   const wordCount = page.markdown.trim() ? page.markdown.trim().split(/\s+/).length : 0;
   const readMinutes = Math.max(1, Math.ceil(wordCount / 220));
   const parentPath = getParentPath(page, spacePages);
+  const parentPage = page.parentPageId ? spacePages.find((item) => item.id === page.parentPageId) : undefined;
 
   return <div>
     <TopNavigation viewer={viewer} createPageContext={{ spaceId: page.spaceId, parentPageId: page.parentPageId ?? "" }} />
     <div className={styles.pageActionBar}>
       <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
-        <div className={styles.pageBreadcrumb}><Link className={styles.pageBreadcrumbLink} to="/spaces">Spaces</Link><span>/</span><Link className={styles.pageBreadcrumbLink} to="/spaces/space/$slug" params={{ slug: page.spaceSlug }}>{page.spaceName}</Link>{parentPath && <><span>/</span><span className={styles.pageBreadcrumbLink}>{parentPath}</span></>}<span>/</span><span className={styles.pageBreadcrumbCurrent}>{page.title}</span></div>
+        <div className={styles.pageBreadcrumb}><Link className={styles.pageBreadcrumbLink} to="/spaces">Spaces</Link><span>/</span><Link className={styles.pageBreadcrumbLink} to="/spaces/space/$slug" params={{ slug: page.spaceSlug }}>{page.spaceName}</Link>{parentPage && <><span>/</span><Link className={styles.pageBreadcrumbLink} to="/spaces/$slug" params={{ slug: parentPage.slug }}>{parentPage.title}</Link></>}<span>/</span><span className={styles.pageBreadcrumbCurrent}>{page.title}</span></div>
         <div className={styles.pageActionGroup}><button type="button" className={styles.pageIconButton} aria-label={starred ? 'Unstar page' : 'Star page'} aria-pressed={starred} onClick={() => setStarred((value) => !value)}><Star size={15} fill={starred ? 'currentColor' : 'none'} /></button><button type="button" className={styles.pageIconButton} aria-label="Share page" onClick={() => { void sharePage(); }}><Share2 size={15} /></button><button type="button" className={styles.pageIconButton} aria-label="More page actions"><MoreHorizontal size={15} /></button>{viewer.isEditor && <button type="button" className={styles.pageActionPrimary} onClick={() => { setError(''); setEditing(true); }}><Pencil size={13} />Edit</button>}</div>
       </div>
     </div>
