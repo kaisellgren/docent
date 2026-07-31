@@ -43,6 +43,7 @@ function ChatPage() {
   const [conversationQuery, setConversationQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [optimisticMessage, setOptimisticMessage] = useState<Messages[number] | null>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const autoSentQuestionRef = useRef("");
@@ -81,14 +82,17 @@ function ChatPage() {
   const activeConversation = conversations.find((conversation) => conversation.id === conversationId);
   const visibleConversations = conversations.filter((conversation) => conversation.title.toLowerCase().includes(conversationQuery.toLowerCase().trim()));
   const references = useMemo(() => uniqueReferences(messages), [messages]);
+  const displayedMessages = optimisticMessage ? [...messages, optimisticMessage] : messages;
 
   async function sendQuestion(message: string) {
     if (!message || loading) return;
     setLoading(true);
     setError("");
     setQuestion("");
+    setOptimisticMessage({ id: `optimistic-${Date.now()}`, role: "user", content: message, createdAt: new Date().toISOString(), citations: [] });
     try {
       const result = await ask({ data: { message, conversationId: conversationId || undefined } });
+      setOptimisticMessage(null);
       await router.navigate({ to: "/chat", search: { q: "", conversationId: result.conversationId } });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Docent could not answer right now.");
@@ -177,7 +181,7 @@ function ChatPage() {
               <span className={styles.chatStatus}><span className={styles.chatStatusDot} /> Ready</span>
             </header>
             <div className={styles.chatMessages} ref={messagesRef}>
-              {messages.length === 0 && !loading ? (
+              {displayedMessages.length === 0 && !loading ? (
                 <div className={styles.chatIntro}>
                   <div className={styles.chatIntroIcon}><Sparkles size={20} /></div>
                   <h2 className={styles.chatIntroTitle}>What would you like to find?</h2>
@@ -188,7 +192,7 @@ function ChatPage() {
                     ))}
                   </div>
                 </div>
-              ) : messages.map((message) => (
+              ) : displayedMessages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}
               {loading && <div className={styles.chatThinking} role="status" aria-live="polite"><span className={styles.chatThinkingIcon}><Sparkles size={15} /></span><span className={styles.chatThinkingDots}><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /></span><span>Docent is weaving an answer…</span></div>}
