@@ -435,7 +435,8 @@ globalStyle(`${recentFile} b, ${spaceFileRow} b`, { overflow: 'hidden', color: '
 globalStyle(`${recentFile} small, ${spaceFileMain} small`, { marginTop: '0.3rem', overflow: 'hidden', color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.05rem', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
 globalStyle(`${fileLabels} em`, { padding: '0.3rem 0.6rem', border: '0.1rem solid rgba(31,200,181,.3)', borderRadius: '0.5rem', background: 'rgba(31,200,181,.1)', color: '#1fc8b5', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1rem', fontStyle: 'normal' });
 globalStyle(`${filesTab} h2`, { margin: '0rem', color: '#eaf3f5', fontSize: '2.5rem' });
-globalStyle(`${filesTab} h3, ${fileFolderPanel} h3`, { margin: '0rem', color: '#eaf3f5', fontSize: '1.5rem' });
+globalStyle(`${filesTab} h3`, { margin: '0rem', color: '#eaf3f5', fontSize: '1.5rem' });
+globalStyle(`${fileFolderPanel} h3`, { margin: '0 0 1rem', color: '#eaf3f5', fontSize: '1.5rem' });
 globalStyle(`${fileFolderRow}:hover`, { borderRadius: '0.7rem', background: 'rgba(20,48,68,.53)', color: '#eaf3f5' });
 globalStyle(`${fileUploadForm} input:not([type="file"]), ${fileUploadForm} select, ${inlineFileForm} input, ${inlineFileForm} select`, { minWidth: '0rem', padding: '0.8rem 0.9rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '0.8rem', outline: 0, background: '#0c1e2c', color: '#9ab1ba', fontSize: '1.2rem' });
 globalStyle(`${fileUploadForm} input[type="file"]`, { position: 'absolute', width: '0.1rem', height: '0.1rem', opacity: 0 });

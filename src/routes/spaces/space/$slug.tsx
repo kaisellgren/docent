@@ -357,8 +357,18 @@ function FilesTab({
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files;
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
+  const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files;
+  const listingFolders = selectedFolderId
+    ? folders.filter((folder) => {
+      let current = folder.parentId;
+      while (current) {
+        if (current === selectedFolderId) return true;
+        current = folderById.get(current)?.parentId ?? null;
+      }
+      return false;
+    })
+    : folders;
   const folderPath = (folder: SpaceFolderData[number]) => {
     const names = [folder.name];
     let current = folder.parentId;
@@ -475,7 +485,7 @@ function FilesTab({
               />
               <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
                 <option value="">Top level</option>
-                {folders.map((folder) => (
+                {listingFolders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
                     {folderPath(folder)}
                   </option>
