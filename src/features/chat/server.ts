@@ -48,6 +48,19 @@ export const getConversationMessages = createServerFn({ method: 'GET' })
     `);
   });
 
+export const deleteConversation = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => conversationIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    const user = await requireSession();
+    const deleted = await (await db()).maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+      UPDATE conversation SET deleted_at = now()
+      WHERE id = ${data.conversationId} AND owner_id = ${user.userId} AND deleted_at IS NULL
+      RETURNING id
+    `);
+    if (!deleted) throw new Response('Conversation not found', { status: 404 });
+    return { ok: true };
+  });
+
 export const askDocent = createServerFn({ method: 'POST' })
   .validator((data: unknown) => chatInputSchema.parse(data))
   .handler(async ({ data }) => {

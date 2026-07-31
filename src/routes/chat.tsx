@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
-import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles } from "lucide-react";
+import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { askDocent, getConversationMessages, getConversations } from "@/features/chat/server";
+import { askDocent, deleteConversation, getConversationMessages, getConversations } from "@/features/chat/server";
 import { currentSession } from "@/server/auth";
 import { TopNavigation } from "@/components/navigation";
 import * as styles from "@/styles/app.css";
@@ -37,6 +37,7 @@ function ChatPage() {
   const { q, conversationId } = Route.useSearch();
   const { viewer, conversations, messages } = Route.useLoaderData();
   const ask = useServerFn(askDocent);
+  const removeConversation = useServerFn(deleteConversation);
   const router = useRouter();
   const [question, setQuestion] = useState(q);
   const [conversationQuery, setConversationQuery] = useState("");
@@ -83,6 +84,21 @@ function ChatPage() {
     await router.navigate({ to: "/chat", search: { q: "", conversationId: "" } });
   }
 
+  async function deleteSelectedConversation(id: string) {
+    if (!window.confirm("Delete this conversation?")) return;
+    setError("");
+    try {
+      await removeConversation({ data: { conversationId: id } });
+      if (id === conversationId) {
+        await router.navigate({ to: "/chat", search: { q: "", conversationId: "" } });
+      } else {
+        await router.invalidate();
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Conversation could not be deleted.");
+    }
+  }
+
   return (
     <div className={styles.chatPage}>
       <TopNavigation viewer={viewer} />
@@ -118,6 +134,7 @@ function ChatPage() {
                   conversation={conversation}
                   active={conversation.id === conversationId}
                   onClick={() => { setQuestion(""); void router.navigate({ to: "/chat", search: { q: "", conversationId: conversation.id } }); }}
+                  onDelete={() => { void deleteSelectedConversation(conversation.id); }}
                 />
               ))}
             </div>
@@ -190,12 +207,17 @@ function ChatPage() {
   );
 }
 
-function ConversationButton({ conversation, active, onClick }: { conversation: Conversation; active: boolean; onClick: () => void }) {
+function ConversationButton({ conversation, active, onClick, onDelete }: { conversation: Conversation; active: boolean; onClick: () => void; onDelete: () => void }) {
   return (
-    <button type="button" className={active ? styles.chatConversationActive : styles.chatConversation} onClick={onClick}>
-      <MessageSquare size={15} />
-      <span><strong className={styles.chatConversationTitle}>{conversation.title}</strong><small className={styles.chatConversationMeta}><Clock3 size={11} />{formatDate(conversation.updatedAt)}</small></span>
-    </button>
+    <div className={styles.chatConversationRow}>
+      <button type="button" className={active ? styles.chatConversationActive : styles.chatConversation} onClick={onClick}>
+        <MessageSquare size={15} />
+        <span><strong className={styles.chatConversationTitle}>{conversation.title}</strong><small className={styles.chatConversationMeta}><Clock3 size={11} />{formatDate(conversation.updatedAt)}</small></span>
+      </button>
+      <button type="button" className={styles.chatConversationDelete} onClick={onDelete} aria-label={`Delete ${conversation.title}`} title="Delete conversation">
+        <Trash2 size={14} />
+      </button>
+    </div>
   );
 }
 
