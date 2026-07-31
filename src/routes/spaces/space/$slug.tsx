@@ -509,11 +509,6 @@ function FilesTab({
             <small>{files.length}</small>
           </button>
           {renderFolders(null)}
-          <div className={styles.fileFolderRow}>
-            <Folder size={15} />
-            <span>Unfiled</span>
-            <small>{files.filter((file) => !file.folderId).length}</small>
-          </div>
         </aside>
         <section className={styles.fileListing}>
           <div className={styles.fileListingHead}>
