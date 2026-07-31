@@ -401,7 +401,7 @@ function FilesTab({
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const selectedFiles = uploadFiles.length ? uploadFiles : form.getAll("file").filter((value): value is File => value instanceof File && value.size > 0);
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0) { setNotice("Choose or drop one or more files first."); return; }
     const tags = String(form.get("tags") ?? "")
       .split(",")
       .map((tag) => tag.trim())
