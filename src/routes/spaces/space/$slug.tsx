@@ -424,8 +424,8 @@ function FilesTab({
     setNotice("File deleted.");
     await router.invalidate();
   }
-  const renderFolders = (parent: string | null): ReactNode => (
-    <ul className={styles.fileFolderTree}>
+  const renderFolders = (parent: string | null, depth = 0): ReactNode => (
+    <ul className={depth === 0 ? styles.fileFolderTree : styles.fileFolderTreeNested}>
       {folders
         .filter((folder) => folder.parentId === parent)
         .map((folder) => (
@@ -435,7 +435,7 @@ function FilesTab({
               <span>{folder.name}</span>
               <small>{files.filter((file) => file.folderId === folder.id).length}</small>
             </div>
-            {renderFolders(folder.id)}
+            {renderFolders(folder.id, depth + 1)}
           </li>
         ))}
     </ul>
