@@ -9,26 +9,32 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
   const fetchInline = useServerFn(getInlineFileUrl);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setAttempt(0);
+  }, [file?.id]);
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
-    let resolved = false;
-    let attempts = 0;
-    setUrl(""); setError("");
+    if (attempt === 0) { setUrl(""); setError(""); }
     const load = async () => {
-      attempts += 1;
       try {
         const result = await (file.mediaType === "application/pdf" ? fetchInline({ data: { fileId: file.id } }) : fetchPreview({ data: { fileId: file.id } }));
-        if (!cancelled) { resolved = true; setError(""); setUrl(result.previewUrl); }
+        if (!cancelled) { setError(""); setUrl(result.previewUrl); }
       } catch {
-        if (!cancelled) setError(attempts < 15 ? "Preview is still being generated…" : "The preview is not ready yet. Retry indexing and try again.");
+        if (cancelled) return;
+        if (attempt >= 14) {
+          setError("The preview is not ready yet. Retry indexing and try again.");
+          return;
+        }
+        setError("Preview is still being generated…");
+        window.setTimeout(() => { if (!cancelled) setAttempt((current) => current + 1); }, 2000);
       }
     };
     void load();
-    const pollTimer = setInterval(() => { if (!cancelled && !resolved && attempts < 15) void load(); }, 2000);
-    return () => { cancelled = true; clearInterval(pollTimer); };
-  }, [file?.id]);
+    return () => { cancelled = true; };
+  }, [file?.id, file?.mediaType, attempt]);
   useEffect(() => {
     if (!file || file.mediaType !== "application/pdf" || !url || !pdfContainerRef.current) return;
     let cancelled = false;
