@@ -281,7 +281,7 @@ function ReferenceCard({ reference }: { reference: Reference }) {
     <article id={referenceId(messageId, citation)} className={styles.chatReferenceCard}>
       <span className={styles.chatReferenceNumber}>[{citation.number}]</span>
       {citation.slug ? <a className={styles.chatReferenceLink} href={`/spaces/${citation.slug}`}><strong>{citation.title}</strong></a> : <strong className={styles.chatReferenceLink}>{citation.title}</strong>}
-      <p className={styles.chatReferenceText}>{citation.excerpt}</p>
+      {citation.excerpt && <p className={styles.chatReferenceText}>{citation.excerpt}</p>}
     </article>
   );
 }

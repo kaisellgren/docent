@@ -29,7 +29,7 @@ export const getConversationMessages = createServerFn({ method: 'GET' })
       SELECT id FROM conversation WHERE id = ${data.conversationId} AND owner_id = ${user.userId} AND deleted_at IS NULL
     `);
     if (!conversation) throw new Response('Conversation not found', { status: 404 });
-    return (await db()).any(sql.type(conversationMessageSchema)`
+    const messages = await (await db()).any(sql.type(conversationMessageSchema)`
       SELECT m.id, m.role, m.content, m.created_at::text AS "createdAt",
         COALESCE(jsonb_agg(jsonb_build_object(
           'number', c.ordinal + 1,
@@ -46,6 +46,7 @@ export const getConversationMessages = createServerFn({ method: 'GET' })
       GROUP BY m.id
       ORDER BY m.created_at ASC
     `);
+    return messages.map((message) => ({ ...message, citations: message.citations.map((citation) => ({ ...citation, excerpt: citationExcerpt(citation.excerpt) })) }));
   });
 
 export const deleteConversation = createServerFn({ method: 'POST' })
@@ -80,9 +81,14 @@ export const askDocent = createServerFn({ method: 'POST' })
     const message = await pool.one(sql.type(z.object({ id: z.string().uuid() }))`INSERT INTO chat_message (conversation_id, role, content) VALUES (${conversation.id}, 'assistant', ${answer}) RETURNING id`);
     for (const { source, ordinal } of citedSources) await pool.query(sql.unsafe`INSERT INTO message_citation (message_id, content_chunk_id, ordinal, excerpt) VALUES (${message.id}, ${source.id}, ${ordinal}, ${source.text.slice(0, 500)})`);
     await pool.query(sql.unsafe`UPDATE conversation SET updated_at = now() WHERE id = ${conversation.id}`);
-    return { conversationId: conversation.id, answer, citations: citedSources.map(({ source, ordinal }) => ({ number: ordinal + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, excerpt: source.text.slice(0, 320) })) };
+    return { conversationId: conversation.id, answer, citations: citedSources.map(({ source, ordinal }) => ({ number: ordinal + 1, title: source.pageTitle ?? source.filename ?? 'Source', slug: source.pageSlug, excerpt: citationExcerpt(source.text) })) };
   });
 
 function citedNumberSet(answer: string): Set<number> {
   return new Set([...answer.matchAll(/\[(\d+)\]/g)].map((match) => Number(match[1])).filter((number) => Number.isInteger(number) && number > 0));
+}
+
+function citationExcerpt(text: string): string {
+  if (/[\{\}]|(?:@_?text|text:(?:span|p)|_text|#text)/i.test(text)) return '';
+  return text.slice(0, 320).trim();
 }

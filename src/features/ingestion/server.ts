@@ -1,6 +1,5 @@
 import JSZip from 'jszip';
 import mammoth from 'mammoth';
-import { XMLParser } from 'fast-xml-parser';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Storage } from '@google-cloud/storage';
 import { z } from 'zod';
@@ -17,7 +16,9 @@ async function extractFile(file: z.infer<typeof fileSchema>) {
   const projectId = env().GOOGLE_CLOUD_PROJECT; const storage = projectId ? new Storage({ projectId }) : new Storage(); const bucket = storage.bucket(env().GCS_BUCKET!); const [bytes] = await bucket.file(file.objectKey).download();
   if (file.mediaType === 'application/pdf') { const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise; const pages = await Promise.all(Array.from({ length: document.numPages }, async (_, index) => (await (await document.getPage(index + 1)).getTextContent()).items.map((item) => ('str' in item ? item.str : '')).join(' '))); return pages.join('\n'); }
   if (file.mediaType.includes('wordprocessingml')) return (await mammoth.extractRawText({ buffer: bytes })).value;
-  const archive = await JSZip.loadAsync(bytes); const xml = await archive.file('content.xml')?.async('string'); if (!xml) throw new Error('ODT content.xml is missing'); const parsed = new XMLParser({ ignoreAttributes: false }).parse(xml); return JSON.stringify(parsed).replace(/[{}[\]"]+/g, ' ');
+  const archive = await JSZip.loadAsync(bytes); const xml = await archive.file('content.xml')?.async('string'); if (!xml) throw new Error('ODT content.xml is missing');
+  const paragraphs = [...xml.matchAll(/<text:p[^>]*>([\s\S]*?)<\/text:p>/gi)].map((match) => (match[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return paragraphs.join('\n\n');
 }
 
 export async function processIngestionJob(jobId: string) {
