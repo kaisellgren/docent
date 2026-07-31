@@ -485,7 +485,7 @@ function FilesTab({
               />
               <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
                 <option value="">Top level</option>
-                {listingFolders.map((folder) => (
+                {folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
                     {folderPath(folder)}
                   </option>
@@ -548,7 +548,7 @@ function FilesTab({
           ) : (
             <>
               <div className={styles.fileListingFolders}>
-                {folders.map((folder) => (
+                {listingFolders.map((folder) => (
                   <div className={styles.fileListingFolderRow} key={folder.id}>
                     <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => setSelectedFolderId(folder.id)}><Folder size={15} /><span>{folderPath(folder)}</span></button>
                     {viewerIsEditor && <button type="button" className={styles.fileListingFolderDelete} aria-label={`Delete folder ${folder.name}`} onClick={() => { void removeFolderAndRefresh(folder); }}><Trash2 size={14} /></button>}
