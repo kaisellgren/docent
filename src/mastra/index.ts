@@ -10,7 +10,7 @@ export function getDocentAgent(): Agent {
   if (docentAgent) return docentAgent;
   const configuration = env();
   if (!configuration.GOOGLE_CLOUD_PROJECT) throw new Error('GOOGLE_CLOUD_PROJECT is required for the Docent agent');
-  const vertex = createVertex({ project: configuration.GOOGLE_CLOUD_PROJECT, location: configuration.GOOGLE_CLOUD_LOCATION });
+  const vertex = createVertex({ project: configuration.GOOGLE_CLOUD_PROJECT, location: configuration.VERTEX_AI_LOCATION });
   docentAgent = new Agent({
     id: 'docent',
     name: 'docent',

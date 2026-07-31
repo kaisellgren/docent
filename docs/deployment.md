@@ -28,7 +28,7 @@ Add the full Neon connection URL as the repository secret `NEON_DATABASE_URL`. D
 
 ## Local cloud-backed testing
 
-Local development uses Podman PostgreSQL and can use the single `dev` GCP project's Vertex AI and Cloud Storage bucket. Authenticate Application Default Credentials with `gcloud auth application-default login`, then set `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GCS_BUCKET` in `.env`.
+Local development uses Podman PostgreSQL and can use the single `dev` GCP project's Vertex AI and Cloud Storage bucket. Authenticate Application Default Credentials with `gcloud auth application-default login`, then set `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `VERTEX_AI_LOCATION=global`, and `GCS_BUCKET` in `.env`. Cloud Run, Cloud Storage, and Cloud Tasks remain in `europe-north1`/`europe-west1`; only Vertex AI uses the global endpoint.
 
 Leave every Cloud Tasks setting blank locally. The app then leaves ingestion jobs in the local PostgreSQL database instead of sending them to Cloud Tasks. Run `npm run ingestion:watch` in a second terminal while developing; it polls for pending jobs, downloads files from the dev GCS bucket, extracts page/file text, and writes Vertex embeddings into the local pgvector database. Use `npm run ingestion:worker` for a one-shot run of up to ten jobs.
 

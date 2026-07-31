@@ -7,7 +7,9 @@ async function vertexFetch(path: string, body: unknown) {
   const project = env().GOOGLE_CLOUD_PROJECT;
   if (!project) throw new Error('GOOGLE_CLOUD_PROJECT is required for Vertex AI');
   const client = await auth.getClient(); const token = await client.getAccessToken();
-  const response = await fetch(`https://${env().GOOGLE_CLOUD_LOCATION}-aiplatform.googleapis.com/v1/projects/${project}/locations/${env().GOOGLE_CLOUD_LOCATION}/publishers/google/models/${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const location = env().VERTEX_AI_LOCATION;
+  const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+  const response = await fetch(`https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!response.ok) throw new Error(`Vertex AI request failed: ${response.status} ${await response.text()}`);
   return response.json() as Promise<unknown>;
 }

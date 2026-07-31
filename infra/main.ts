@@ -174,6 +174,7 @@ class DocentDev extends TerraformStack {
           env: [
             { name: 'GOOGLE_CLOUD_PROJECT', value: project },
             { name: 'GOOGLE_CLOUD_LOCATION', value: region },
+            { name: 'VERTEX_AI_LOCATION', value: 'global' },
             { name: 'GCS_BUCKET', value: bucket.name },
             { name: 'CLOUD_TASKS_LOCATION', value: tasksRegion },
             { name: 'DATABASE_URL', valueSource: { secretKeyRef: { secret: 'docent-neon-url', version: 'latest' } } },
