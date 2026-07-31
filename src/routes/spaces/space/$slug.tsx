@@ -31,6 +31,7 @@ import {
 import { getSpace, getSpacePages, toggleSpaceFavorite } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
 import { SpaceIcon } from "@/components/space-icon";
+import { FancySelect } from "@/components/fancy-select";
 import { IngestionStatus } from "@/components/ingestion-status";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
@@ -245,15 +246,7 @@ function SpacePage() {
                   All pages <span>({matchingPages.length})</span>
                 </h2>
                 <div className={styles.contentControls}>
-                  <select
-                    className={styles.detailSort}
-                    value={sort}
-                    onChange={(event) => setSort(event.target.value as typeof sort)}
-                  >
-                    <option value="tree">Sort: Tree order</option>
-                    <option value="updated">Sort: Recently updated</option>
-                    <option value="name">Sort: Name A–Z</option>
-                  </select>
+                  <FancySelect value={sort} onChange={(value) => setSort(value as typeof sort)} options={[{ value: "tree", label: "Sort: Tree order" }, { value: "updated", label: "Sort: Recently updated" }, { value: "name", label: "Sort: Name A–Z" }]} className={styles.detailSort} />
                   <div className={styles.detailViewToggle}>
                     <button
                       type="button"
@@ -359,6 +352,7 @@ function FilesTab({
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [uploadFolderId, setUploadFolderId] = useState("");
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
@@ -403,7 +397,7 @@ function FilesTab({
         filename: selected.name,
         mediaType,
         sizeBytes: selected.size,
-        folderId: String(form.get("folderId") || "") || null,
+        folderId: uploadFolderId || null,
         tagNames: tags,
         spaceId,
       },
@@ -416,6 +410,7 @@ function FilesTab({
     await confirm({ data: { fileId: intent.fileId } });
     setNotice("Upload accepted and queued for indexing.");
     formElement.reset();
+    setUploadFolderId("");
     window.location.reload();
   }
   async function addFolderSubmit(event: FormEvent<HTMLFormElement>) {
@@ -509,14 +504,7 @@ function FilesTab({
                 onChange={(event) => setFolderName(event.target.value)}
                 placeholder="New folder"
               />
-              <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
-                <option value="">Top level</option>
-                {folders.map((folder) => (
-                  <option key={folder.id} value={folder.id}>
-                    {folderPath(folder)}
-                  </option>
-                ))}
-              </select>
+              <FancySelect value={parentId} onChange={setParentId} options={[{ value: "", label: "Top level" }, ...folders.map((folder) => ({ value: folder.id, label: folderPath(folder) }))]} />
               <button className={styles.detailButton}>
                 <Plus size={14} />
                 Folder
@@ -558,14 +546,7 @@ function FilesTab({
                   />
                 </label>
                 <input name="tags" placeholder="labels, comma separated" />
-                <select name="folderId">
-                  <option value="">Unfiled</option>
-                  {folders.map((folder) => (
-                    <option key={folder.id} value={folder.id}>
-                      {folderPath(folder)}
-                    </option>
-                  ))}
-                </select>
+                <FancySelect name="folderId" value={uploadFolderId} onChange={setUploadFolderId} options={[{ value: "", label: "Unfiled" }, ...folders.map((folder) => ({ value: folder.id, label: folderPath(folder) }))]} />
                 <button className={styles.detailPrimaryButton}>Add file</button>
               </form>
             )}

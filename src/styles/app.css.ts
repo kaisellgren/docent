@@ -90,6 +90,12 @@ export const chatUnauthenticated = style({ display: 'flex', flexDirection: 'colu
 export const chatWelcomeIcon = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '5rem', height: '5rem', marginBottom: '1.6rem', border: '0.1rem solid rgba(31,200,181,.3)', borderRadius: '1.4rem', background: 'rgba(31,200,181,.1)', color: '#1fc8b5' });
 export const primaryButton = style({ border: 0, borderRadius: '1.2rem', padding: '1rem 1.6rem', background: 'linear-gradient(135deg, #1fc8b5, #3e7bfa)', color: '#04120f', cursor: 'pointer', fontWeight: 700 });
 export const secondaryButton = style({ border: '0.1rem solid rgba(255,255,255,.16)', borderRadius: '1rem', padding: '0.8rem 1.2rem', color: '#eaf3f5', background: 'transparent', cursor: 'pointer' });
+export const fancySelectTrigger = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', minWidth: '14rem', padding: '0.8rem 0.9rem', border: '0.1rem solid rgba(255,255,255,.16)', borderRadius: '0.8rem', outline: 0, background: '#0c1e2c', color: '#9ab1ba', cursor: 'pointer', font: 'inherit', fontSize: '1.2rem', textAlign: 'left' });
+export const fancySelectIcon = style({ display: 'flex', color: '#1fc8b5' });
+export const fancySelectPositioner = style({ zIndex: 20 });
+export const fancySelectPopup = style({ minWidth: 'var(--anchor-width)', maxHeight: '24rem', overflowY: 'auto', padding: '0.5rem', border: '0.1rem solid rgba(117,166,255,.35)', borderRadius: '1rem', background: '#102a3d', boxShadow: '0 1.2rem 3rem rgba(0,0,0,.35)' });
+export const fancySelectItem = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.8rem 0.9rem', borderRadius: '0.6rem', outline: 0, color: '#9ab1ba', cursor: 'pointer', fontSize: '1.2rem' });
+export const fancySelectIndicator = style({ display: 'flex', color: '#1fc8b5' });
 export const section = style({ padding: '3.6rem 0' });
 export const grid = style({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(23rem, 1fr))', gap: '1.4rem' });
 export const card = style({ padding: '1.8rem', background: '#0f2434', border: '0.1rem solid rgba(255,255,255,.1)', borderRadius: '1.4rem' });
@@ -368,6 +374,8 @@ globalStyle(`${termsPage} h2`, { margin: '3.2rem 0 1rem', color: '#eaf3f5', font
 globalStyle(`${termsPage} p`, { margin: '0 0 1.6rem' });
 globalStyle('button:focus-visible, input:focus-visible', { outline: '0rem solid #1fc8b5', outlineOffset: 2 });
 globalStyle('button:disabled', { cursor: 'not-allowed', opacity: .6 });
+globalStyle(`${fancySelectTrigger}:hover, ${fancySelectTrigger}[data-popup-open]`, { borderColor: 'rgba(117,166,255,.58)', background: 'rgba(15,36,52,.9)', boxShadow: '0 0 0.8rem rgba(62,123,250,.12)' });
+globalStyle(`${fancySelectItem}:hover, ${fancySelectItem}[data-highlighted]`, { background: 'rgba(31,200,181,.14)', color: '#eaf3f5' });
 globalStyle('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]), textarea, select', { transition: 'border-color .18s ease, background .18s ease, box-shadow .18s ease' });
 globalStyle('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):hover, textarea:hover, select:hover', { borderColor: 'rgba(117,166,255,.58)', backgroundColor: 'rgba(15,36,52,.9)', boxShadow: '0 0 0.8rem rgba(62,123,250,.12)' });
 globalStyle(`body:has(${chatPage})`, { overflow: 'hidden' });

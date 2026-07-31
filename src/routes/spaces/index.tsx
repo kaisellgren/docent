@@ -3,6 +3,7 @@ import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { Grid2X2, List, Plus, Search, Star } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { TopNavigation } from "@/components/navigation";
+import { FancySelect } from "@/components/fancy-select";
 import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
 import { createSpace, getSpaces } from "@/features/wiki/server";
 import { currentSession } from "@/server/auth";
@@ -135,16 +136,7 @@ function SpacesIndex() {
               />
               <label className={styles.spacesIconField}>
                 <span>Icon</span>
-                <select
-                  className={styles.spacesFormSelect}
-                  value={icon}
-                  onChange={(event) => setIcon(event.target.value as SpaceIconName)}
-                  aria-label="Space icon"
-                >
-                  {SPACE_ICON_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                <FancySelect value={icon} onChange={(value) => setIcon(value as SpaceIconName)} options={SPACE_ICON_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} />
               </label>
               <span className={styles.spaceIcon}><SpaceIcon name={icon} size={20} /></span>
               <button className={styles.primaryButton}>Create space</button>

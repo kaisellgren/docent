@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPage, getSpacePages, getSpaces } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
 import { SpaceIcon } from "@/components/space-icon";
+import { FancySelect } from "@/components/fancy-select";
 import { currentSession } from "@/server/auth";
 import * as styles from "@/styles/app.css";
 
@@ -304,20 +305,7 @@ function CreatePage() {
               <h2 className={styles.editorSideCardTitle}>Page settings</h2>
               <div className={styles.editorField}>
                 <label htmlFor="space">Space</label>
-                <select
-                  id="space"
-                  className={styles.editorSelect}
-                  value={spaceId}
-                  onChange={(event) => setSpaceId(event.target.value)}
-                  disabled={publishing}
-                >
-                  <option value="">Choose a space</option>
-                  {spaces.map((space) => (
-                    <option key={space.id} value={space.id}>
-                      {space.name}
-                    </option>
-                  ))}
-                </select>
+                <FancySelect value={spaceId} onChange={setSpaceId} disabled={publishing} options={[{ value: "", label: "Choose a space" }, ...spaces.map((space) => ({ value: space.id, label: space.name }))]} />
                 {spaces.length === 0 && (
                   <Link className={styles.editorCreateSpaceLink} to="/spaces">
                     Create a space first
@@ -326,20 +314,7 @@ function CreatePage() {
               </div>
               <div className={styles.editorField}>
                 <label htmlFor="parent-page">Parent page</label>
-                <select
-                  id="parent-page"
-                  className={styles.editorSelect}
-                  value={parentPageId}
-                  onChange={(event) => setParentPageId(event.target.value)}
-                  disabled={publishing || !spaceId}
-                >
-                  <option value="">None (top level)</option>
-                  {parentPages.map((page) => (
-                    <option key={page.id} value={page.id}>
-                      {page.title}
-                    </option>
-                  ))}
-                </select>
+                <FancySelect value={parentPageId} onChange={setParentPageId} disabled={publishing || !spaceId} options={[{ value: "", label: "None (top level)" }, ...parentPages.map((page) => ({ value: page.id, label: page.title }))]} />
               </div>
               <div className={styles.editorField}>
                 <span>Slug</span>
