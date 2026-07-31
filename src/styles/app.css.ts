@@ -431,6 +431,7 @@ globalStyle(`${treeRow} a`, { display: 'flex', alignItems: 'center', gap: '0.6re
 globalStyle(`${treeRow} a span`, { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
 globalStyle(`${treeRow} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${pageRow}:hover`, { background: 'rgba(20,48,68,.53)' });
+globalStyle(`${pageRevisionList} + ${pageActionButton}`, { marginTop: '1.6rem' });
 globalStyle(`${pageViewCenterLinks} a`, { color: '#9ab1ba', fontSize: '1.4rem', fontWeight: 500, textDecoration: 'none' });
 globalStyle(`${pageViewCenterLinks} a:hover`, { color: '#eaf3f5' });
 globalStyle(`${pageAvatarDropdown} strong`, { color: '#eaf3f5', fontSize: '1.3rem' });
