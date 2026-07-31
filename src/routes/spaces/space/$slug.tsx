@@ -108,7 +108,8 @@ function SpacePage() {
     const result = [...matchingPages];
     if (sort === "updated")
       result.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-    if (sort === "name" || sort === "tree") result.sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "name") result.sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "tree") return flattenPageTree(result);
     return result;
   }, [matchingPages, sort]);
   function toggleCollapsed(id: string) {
@@ -759,6 +760,25 @@ function includeAncestors(matches: SpacePageData, pages: SpacePageData) {
       }
   }
   return pages.filter((page) => ids.has(page.id));
+}
+function flattenPageTree(pages: SpacePageData): SpacePageItem[] {
+  const children = new Map<string | null, SpacePageItem[]>();
+  for (const page of pages) {
+    const branch = children.get(page.parentPageId) ?? [];
+    branch.push(page);
+    children.set(page.parentPageId, branch);
+  }
+  for (const branch of children.values()) branch.sort((a, b) => a.title.localeCompare(b.title));
+  const result: SpacePageItem[] = [];
+  function visit(parentId: string | null) {
+    for (const page of children.get(parentId) ?? []) {
+      result.push(page);
+      visit(page.id);
+    }
+  }
+  visit(null);
+  for (const page of pages) if (!result.includes(page)) result.push(page);
+  return result;
 }
 function relativeTime(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
