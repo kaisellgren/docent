@@ -24,6 +24,7 @@ import {
   getDownloadUrl,
   getSpaceFiles,
   getSpaceFolders,
+  moveFolder,
   deleteFile,
   retryFileIngestion,
 } from "@/features/files/server";
@@ -349,6 +350,7 @@ function FilesTab({
   const confirm = useServerFn(confirmUpload);
   const addFolder = useServerFn(createFolder);
   const removeFolder = useServerFn(deleteFolder);
+  const moveFolderFn = useServerFn(moveFolder);
   const download = useServerFn(getDownloadUrl);
   const retryFile = useServerFn(retryFileIngestion);
   const removeFile = useServerFn(deleteFile);
@@ -357,6 +359,8 @@ function FilesTab({
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+  const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
   const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files.filter((file) => !file.folderId);
   const listingFolders = selectedFolderId
@@ -449,13 +453,35 @@ function FilesTab({
       setNotice(cause instanceof Error ? cause.message : "Folder could not be deleted.");
     }
   }
+  async function moveFolderTo(folderId: string, destinationParentId: string | null) {
+    try {
+      await moveFolderFn({ data: { folderId, destinationParentId } });
+      setNotice("Folder moved.");
+      await router.invalidate();
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Folder could not be moved.");
+    } finally {
+      setDraggedFolderId(null);
+      setDropTargetFolderId(null);
+    }
+  }
   const renderFolders = (parent: string | null, depth = 0): ReactNode => (
     <ul className={depth === 0 ? styles.fileFolderTree : styles.fileFolderTreeNested}>
       {folders
         .filter((folder) => folder.parentId === parent)
         .map((folder) => (
           <li key={folder.id}>
-            <button type="button" className={selectedFolderId === folder.id ? styles.fileFolderRowSelected : styles.fileFolderButton} onClick={() => setSelectedFolderId(folder.id)}>
+            <button
+              type="button"
+              draggable={viewerIsEditor}
+              className={`${selectedFolderId === folder.id ? styles.fileFolderRowSelected : styles.fileFolderButton} ${dropTargetFolderId === folder.id ? styles.fileFolderRowDropTarget : ""}`}
+              onClick={() => setSelectedFolderId(folder.id)}
+              onDragStart={() => setDraggedFolderId(folder.id)}
+              onDragOver={(event) => { if (draggedFolderId && draggedFolderId !== folder.id) { event.preventDefault(); setDropTargetFolderId(folder.id); } }}
+              onDragLeave={() => setDropTargetFolderId(null)}
+              onDrop={(event) => { event.preventDefault(); if (draggedFolderId && draggedFolderId !== folder.id) void moveFolderTo(draggedFolderId, folder.id); }}
+              onDragEnd={() => { setDraggedFolderId(null); setDropTargetFolderId(null); }}
+            >
               <Folder size={15} />
               <span>{folder.name}</span>
               <small>{files.filter((file) => file.folderId === folder.id).length}</small>
@@ -503,16 +529,22 @@ function FilesTab({
       <div className={styles.filesTabLayout}>
         <aside className={styles.fileFolderPanel}>
           <h3>Folders</h3>
-          <button type="button" className={selectedFolderId === null ? styles.fileFolderRowSelected : styles.fileFolderButton} onClick={() => setSelectedFolderId(null)}>
-            <Folder size={15} />
-            <span>All files</span>
-            <small>{files.filter((file) => !file.folderId).length}</small>
+          <button
+            type="button"
+            className={`${selectedFolderId === null ? styles.fileFolderRowSelected : styles.fileFolderButton} ${dropTargetFolderId === "__root__" ? styles.fileFolderRowDropTarget : ""}`}
+            onClick={() => setSelectedFolderId(null)}
+            onDragOver={(event) => { if (draggedFolderId) { event.preventDefault(); setDropTargetFolderId("__root__"); } }}
+            onDragLeave={() => setDropTargetFolderId(null)}
+            onDrop={(event) => { event.preventDefault(); if (draggedFolderId) void moveFolderTo(draggedFolderId, null); }}
+          >
+            <SpaceIcon name="compass" size={15} />
+            <span>Space</span>
           </button>
           {renderFolders(null)}
         </aside>
         <section className={styles.fileListing}>
           <div className={styles.fileListingHead}>
-            <h3>{selectedFolderId ? folderById.get(selectedFolderId)?.name ?? "Folder" : "All files"} <span>({visibleFiles.length})</span></h3>
+            <h3>{selectedFolderId ? folderById.get(selectedFolderId)?.name ?? "Folder" : "Space"} <span>({visibleFiles.length})</span></h3>
             {viewerIsEditor && (
               <form onSubmit={upload} className={styles.fileUploadForm}>
                 <label className={styles.detailButton}>

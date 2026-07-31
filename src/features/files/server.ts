@@ -13,6 +13,7 @@ const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlforma
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional(), pageId: z.string().uuid().nullable().optional() });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
 const folderIdSchema = z.object({ folderId: z.string().uuid() });
+const moveFolderSchema = folderIdSchema.extend({ destinationParentId: z.string().uuid().nullable() });
 const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), error: z.string().nullable(), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
 const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
 const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable(), spaceId: z.string().uuid().nullable() });
@@ -115,6 +116,55 @@ export const deleteFolder = createServerFn({ method: 'POST' })
     `);
     if (contents.fileCount || contents.childCount) throw new Response('Move or delete the folder contents before deleting this folder.', { status: 400 });
     await pool.query(sql.unsafe`UPDATE folder SET deleted_at = now(), updated_at = now() WHERE id = ${data.folderId}`);
+    return { ok: true };
+  });
+
+export const moveFolder = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => moveFolderSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    const source = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }))`
+      SELECT id, space_id AS "spaceId"
+      FROM folder
+      WHERE id = ${data.folderId} AND deleted_at IS NULL
+    `);
+    if (!source) throw new Response('Folder not found', { status: 404 });
+    if (data.destinationParentId === data.folderId) {
+      throw new Response('A folder cannot be moved into itself.', { status: 400 });
+    }
+    if (data.destinationParentId) {
+      const destination = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id
+        FROM folder
+        WHERE id = ${data.destinationParentId}
+          AND space_id = ${source.spaceId}
+          AND deleted_at IS NULL
+      `);
+      if (!destination) throw new Response('Destination folder not found', { status: 404 });
+      const descendant = await pool.one(sql.type(z.object({ isDescendant: z.boolean() }))`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM folder WHERE id = ${data.folderId}
+          UNION ALL
+          SELECT child.id FROM folder child JOIN descendants parent ON child.parent_id = parent.id
+          WHERE child.deleted_at IS NULL
+        )
+        SELECT EXISTS (SELECT 1 FROM descendants WHERE id = ${data.destinationParentId}) AS "isDescendant"
+      `);
+      if (descendant.isDescendant) throw new Response('A folder cannot be moved into one of its descendants.', { status: 400 });
+    }
+    try {
+      await pool.query(sql.unsafe`
+        UPDATE folder
+        SET parent_id = ${data.destinationParentId}, updated_at = now()
+        WHERE id = ${data.folderId} AND deleted_at IS NULL
+      `);
+    } catch (cause) {
+      if (cause instanceof Error && cause.message.includes('folder_parent_id_name_key')) {
+        throw new Response('A folder with that name already exists in the destination.', { status: 409 });
+      }
+      throw cause;
+    }
     return { ok: true };
   });
 
