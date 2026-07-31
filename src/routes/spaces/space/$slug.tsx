@@ -612,7 +612,7 @@ function FilesTab({
           )}
         </section>
       </div>
-      <FilePreviewModal file={previewFile ? { id: previewFile.id, filename: previewFile.filename } : null} onClose={() => setPreviewFile(null)} />
+      <FilePreviewModal file={previewFile ? { id: previewFile.id, filename: previewFile.filename, mediaType: previewFile.mediaType } : null} onClose={() => setPreviewFile(null)} />
     </section>
   );
 }

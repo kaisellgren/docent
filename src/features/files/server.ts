@@ -359,3 +359,16 @@ export const getPreviewUrl = createServerFn({ method: 'GET' })
     const [previewUrl] = await bucket().file(file.previewObjectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 10 * 60 * 1000, responseDisposition: 'inline', responseType: 'text/html' });
     return { previewUrl };
   });
+
+export const getInlineFileUrl = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => fileIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireSession();
+    const file = await (await db()).maybeOne(sql.type(z.object({ objectKey: z.string(), filename: z.string() }))`
+      SELECT object_key AS "objectKey", original_filename AS filename FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
+    `);
+    if (!file) throw new Response('File not found', { status: 404 });
+    const filename = file.filename.replace(/["\\\r\n]/g, '_');
+    const [previewUrl] = await bucket().file(file.objectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 10 * 60 * 1000, responseDisposition: `inline; filename="${filename}"` });
+    return { previewUrl };
+  });
