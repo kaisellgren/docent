@@ -256,7 +256,7 @@ function MessageBubble({ message }: { message: Messages[number] }) {
     <article className={assistant ? styles.chatMessageAssistant : styles.chatMessageUser}>
       <div className={styles.chatMessageLabel}>{assistant ? <><Sparkles size={14} /> Docent</> : "You"}</div>
       <div className={assistant ? styles.chatMessageBody : styles.chatMessageUserBody}>
-        {assistant ? <CitedText text={message.content} messageId={message.id} citations={message.citations} /> : <p>{message.content}</p>}
+        {assistant ? <CitedText text={message.content} citations={message.citations} /> : <p>{message.content}</p>}
       </div>
       {assistant && message.citations.length > 0 && (
         <div className={styles.chatMessageReferences}>
@@ -267,7 +267,7 @@ function MessageBubble({ message }: { message: Messages[number] }) {
   );
 }
 
-function CitedText({ text, messageId, citations }: { text: string; messageId: string; citations: Citation[] }) {
+function CitedText({ text, citations }: { text: string; citations: Citation[] }) {
   const markdown = text.replace(/\[(\d+)\]/g, (match, number: string) => {
     const citation = citations.find((item) => item.number === Number(number));
     return citation ? "" : match;
