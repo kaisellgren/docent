@@ -95,6 +95,12 @@ class DocentDev extends TerraformStack {
       location: region,
       uniformBucketLevelAccess: true,
       forceDestroy: false,
+      cors: [{
+        origin: ['http://localhost:5173', process.env.DOCENT_APP_URL ?? 'https://docent-dev-mslclny3pa-lz.a.run.app'],
+        method: ['PUT', 'GET', 'HEAD'],
+        responseHeader: ['Content-Type'],
+        maxAgeSeconds: 3600,
+      }],
       dependsOn: [enabledServices.get('storage.googleapis.com')!],
     });
     new google.artifactRegistryRepository.ArtifactRegistryRepository(this, 'images', {
