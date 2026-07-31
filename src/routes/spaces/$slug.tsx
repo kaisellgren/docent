@@ -74,7 +74,8 @@ function PageView() {
   }
   async function uploadAttachment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const selected = form.get('file');
     if (!(selected instanceof File)) return;
     const mediaType = selected.type || mediaTypeForFilename(selected.name);
@@ -85,7 +86,7 @@ function PageView() {
       if (!response.ok) throw new Error('The file could not be uploaded to storage.');
       await confirm({ data: { fileId: intent.fileId } });
       setNotice('File attached and queued for indexing.');
-      event.currentTarget.reset();
+      formElement.reset();
       await router.invalidate();
     });
   }

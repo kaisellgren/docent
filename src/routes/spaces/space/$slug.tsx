@@ -368,7 +368,8 @@ function FilesTab({
   };
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const selected = form.get("file");
     if (!(selected instanceof File)) return;
     const mediaType = selected.type || mediaTypeForFilename(selected.name);
@@ -394,7 +395,7 @@ function FilesTab({
     });
     await confirm({ data: { fileId: intent.fileId } });
     setNotice("Upload accepted and queued for indexing.");
-    event.currentTarget.reset();
+    formElement.reset();
     window.location.reload();
   }
   async function addFolderSubmit(event: FormEvent<HTMLFormElement>) {
