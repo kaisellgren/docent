@@ -12,6 +12,7 @@ import { enqueueIngestionJob } from '@/features/ingestion/queue';
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
 const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional(), pageId: z.string().uuid().nullable().optional() });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
+const folderIdSchema = z.object({ folderId: z.string().uuid() });
 const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), error: z.string().nullable(), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
 const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
 const folderSchema = z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable(), spaceId: z.string().uuid().nullable() });
@@ -96,6 +97,25 @@ export const createFolder = createServerFn({ method: 'POST' })
       INSERT INTO folder (name, parent_id, space_id, created_by) VALUES (${data.name}, ${data.parentId}, ${data.spaceId ?? null}, ${user.userId})
       RETURNING id, name, parent_id AS "parentId", space_id AS "spaceId"
     `);
+  });
+
+export const deleteFolder = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => folderIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    const folder = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+      SELECT id FROM folder WHERE id = ${data.folderId} AND deleted_at IS NULL
+    `);
+    if (!folder) throw new Response('Folder not found', { status: 404 });
+    const contents = await pool.one(sql.type(z.object({ fileCount: z.number().int(), childCount: z.number().int() }))`
+      SELECT
+        (SELECT COUNT(*)::integer FROM stored_file WHERE folder_id = ${data.folderId} AND deleted_at IS NULL) AS "fileCount",
+        (SELECT COUNT(*)::integer FROM folder WHERE parent_id = ${data.folderId} AND deleted_at IS NULL) AS "childCount"
+    `);
+    if (contents.fileCount || contents.childCount) throw new Response('Move or delete the folder contents before deleting this folder.', { status: 400 });
+    await pool.query(sql.unsafe`UPDATE folder SET deleted_at = now(), updated_at = now() WHERE id = ${data.folderId}`);
+    return { ok: true };
   });
 
 export const createUploadIntent = createServerFn({ method: 'POST' })

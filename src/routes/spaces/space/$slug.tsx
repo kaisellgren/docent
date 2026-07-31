@@ -20,6 +20,7 @@ import {
   confirmUpload,
   createFolder,
   createUploadIntent,
+  deleteFolder,
   getDownloadUrl,
   getSpaceFiles,
   getSpaceFolders,
@@ -347,6 +348,7 @@ function FilesTab({
   const uploadIntent = useServerFn(createUploadIntent);
   const confirm = useServerFn(confirmUpload);
   const addFolder = useServerFn(createFolder);
+  const removeFolder = useServerFn(deleteFolder);
   const download = useServerFn(getDownloadUrl);
   const retryFile = useServerFn(retryFileIngestion);
   const removeFile = useServerFn(deleteFile);
@@ -354,6 +356,8 @@ function FilesTab({
   const [notice, setNotice] = useState("");
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files;
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
   const folderPath = (folder: SpaceFolderData[number]) => {
     const names = [folder.name];
@@ -424,17 +428,28 @@ function FilesTab({
     setNotice("File deleted.");
     await router.invalidate();
   }
+  async function removeFolderAndRefresh(folder: SpaceFolderData[number]) {
+    if (!window.confirm(`Delete folder “${folder.name}”?`)) return;
+    try {
+      await removeFolder({ data: { folderId: folder.id } });
+      if (selectedFolderId === folder.id) setSelectedFolderId(null);
+      setNotice("Folder deleted.");
+      await router.invalidate();
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Folder could not be deleted.");
+    }
+  }
   const renderFolders = (parent: string | null, depth = 0): ReactNode => (
     <ul className={depth === 0 ? styles.fileFolderTree : styles.fileFolderTreeNested}>
       {folders
         .filter((folder) => folder.parentId === parent)
         .map((folder) => (
           <li key={folder.id}>
-            <div className={styles.fileFolderRow}>
+            <button type="button" className={selectedFolderId === folder.id ? styles.fileFolderRowSelected : styles.fileFolderButton} onClick={() => setSelectedFolderId(folder.id)}>
               <Folder size={15} />
               <span>{folder.name}</span>
               <small>{files.filter((file) => file.folderId === folder.id).length}</small>
-            </div>
+            </button>
             {renderFolders(folder.id, depth + 1)}
           </li>
         ))}
@@ -478,6 +493,11 @@ function FilesTab({
       <div className={styles.filesTabLayout}>
         <aside className={styles.fileFolderPanel}>
           <h3>Folders</h3>
+          <button type="button" className={selectedFolderId === null ? styles.fileFolderRowSelected : styles.fileFolderButton} onClick={() => setSelectedFolderId(null)}>
+            <Folder size={15} />
+            <span>All files</span>
+            <small>{files.length}</small>
+          </button>
           {renderFolders(null)}
           <div className={styles.fileFolderRow}>
             <Folder size={15} />
@@ -487,9 +507,7 @@ function FilesTab({
         </aside>
         <section className={styles.fileListing}>
           <div className={styles.fileListingHead}>
-            <h3>
-              All files <span>({files.length})</span>
-            </h3>
+            <h3>{selectedFolderId ? folderById.get(selectedFolderId)?.name ?? "Folder" : "All files"} <span>({visibleFiles.length})</span></h3>
             {viewerIsEditor && (
               <form onSubmit={upload} className={styles.fileUploadForm}>
                 <label className={styles.detailButton}>
@@ -518,8 +536,17 @@ function FilesTab({
           {files.length === 0 ? (
             <p className={styles.muted}>No files have been uploaded to this space.</p>
           ) : (
-            <div className={styles.fileListingRows}>
-              {files.map((file) => (
+            <>
+              <div className={styles.fileListingFolders}>
+                {folders.map((folder) => (
+                  <div className={styles.fileListingFolderRow} key={folder.id}>
+                    <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => setSelectedFolderId(folder.id)}><Folder size={15} /><span>{folderPath(folder)}</span></button>
+                    {viewerIsEditor && <button type="button" className={styles.fileListingFolderDelete} aria-label={`Delete folder ${folder.name}`} onClick={() => { void removeFolderAndRefresh(folder); }}><Trash2 size={14} /></button>}
+                  </div>
+                ))}
+              </div>
+              <div className={styles.fileListingRows}>
+              {visibleFiles.map((file) => (
                 <div className={styles.spaceFileRow} key={file.id}>
                   <FileText size={17} />
                   <div className={styles.spaceFileMain}>
@@ -552,7 +579,9 @@ function FilesTab({
                   {viewerIsEditor && <button type="button" className={styles.detailButton} onClick={() => { void remove(file); }}><Trash2 size={14} />Delete</button>}
                 </div>
               ))}
-            </div>
+              {visibleFiles.length === 0 && <p className={styles.muted}>No files in this folder.</p>}
+              </div>
+            </>
           )}
         </section>
       </div>

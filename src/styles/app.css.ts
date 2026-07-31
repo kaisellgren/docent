@@ -211,7 +211,7 @@ export const spaceMetaRow = style({ display: 'flex', alignItems: 'center', flexW
 export const contributorStack = style({ display: 'flex', alignItems: 'center' });
 export const contributorAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.2rem', height: '2.2rem', marginLeft: '-0.7rem', border: '0.2rem solid #081420', borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', fontSize: '0.85rem', fontWeight: 700 });
 export const spaceTabs = style({ display: 'flex', gap: '2.6rem', marginTop: '2.6rem', borderBottom: '0.1rem solid rgba(255,255,255,.09)' });
-export const spaceTabActive = style({ position: 'relative', padding: '1.2rem 0.2rem', border: 0, background: 'none', color: '#eaf3f5', cursor: 'pointer', fontSize: '1.4rem', fontWeight: 500, selectors: { '&::after': { content: '""', position: 'absolute', right: '0rem', bottom: '-0.1rem', left: '0rem', height: '0.2rem', background: 'linear-gradient(90deg, #1fc8b5, #3e7bfa)' } } });
+export const spaceTabActive = style({ textDecoration: 'none', position: 'relative', padding: '1.2rem 0.2rem', border: 0, background: 'none', color: '#eaf3f5', cursor: 'pointer', fontSize: '1.4rem', fontWeight: 500, selectors: { '&::after': { content: '""', position: 'absolute', right: '0rem', bottom: '-0.1rem', left: '0rem', height: '0.2rem', background: 'linear-gradient(90deg, #1fc8b5, #3e7bfa)' } } });
 export const spaceTab = style({ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '1.2rem 0.2rem', color: '#64828c', fontSize: '1.4rem', textDecoration: 'none' });
 export const spaceTabMuted = style({ padding: '1.2rem 0.2rem', color: '#64828c', fontSize: '1.4rem' });
 export const spaceTabCount = style({ padding: '0.2rem 0.6rem', borderRadius: '99.9rem', background: 'rgba(255,255,255,.08)', color: '#9ab1ba', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1rem' });
@@ -257,8 +257,15 @@ export const fileFolderPanel = style({ position: 'sticky', top: '8.8rem', paddin
 export const fileFolderTree = style({ margin: '0rem', padding: '0rem', listStyle: 'none' });
 export const fileFolderTreeNested = style({ margin: '0rem', padding: '0 0 0 1.6rem', listStyle: 'none' });
 export const fileFolderRow = style({ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.8rem 0.6rem', color: '#9ab1ba', fontSize: '1.3rem' });
+export const fileFolderButton = style([fileFolderRow, { width: '100%', border: 0, background: 'transparent', color: '#9ab1ba', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }]);
+export const fileFolderRowSelected = style([fileFolderButton, { borderRadius: '0.7rem', background: 'rgba(31,200,181,.12)', color: '#eaf3f5' }]);
 export const fileFolderRowCount = style({ marginLeft: 'auto', color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.1rem' });
 export const fileListing = style({ minWidth: '0rem' });
+export const fileListingFolders = style({ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' });
+export const fileListingFolderRow = style({ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 0.8rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '0.8rem', background: 'rgba(15,36,52,.55)' });
+export const fileListingFolderButton = style({ display: 'flex', alignItems: 'center', gap: '0.7rem', minWidth: '0rem', flex: 1, border: 0, background: 'transparent', color: '#9ab1ba', cursor: 'pointer', fontFamily: 'inherit', fontSize: '1.2rem', textAlign: 'left' });
+export const fileListingFolderButtonSelected = style([fileListingFolderButton, { color: '#1fc8b5', fontWeight: 600 }]);
+export const fileListingFolderDelete = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.8rem', height: '2.8rem', border: 0, borderRadius: '0.6rem', background: 'transparent', color: '#64828c', cursor: 'pointer' });
 export const fileListingRows = style({ borderTop: '0.1rem solid rgba(255,255,255,.09)' });
 export const fileListingHead = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.4rem', marginBottom: '1.4rem' });
 export const fileUploadForm = style({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.7rem' });
@@ -398,6 +405,9 @@ globalStyle(`${editorPanesPreview} > ${editorPreviewPane}`, { gridColumn: '1 / -
 globalStyle(`${spacesSearchInput}::placeholder`, { color: '#64828c', opacity: 1 });
 globalStyle(`${spacesFormInput}::placeholder`, { color: '#64828c', opacity: 1 });
 globalStyle(`${spaceCard}:hover`, { transform: 'translateY(-0.3rem)', borderColor: 'rgba(31,200,181,.3)', boxShadow: '0 1.4rem 3rem rgba(0,0,0,.12)' });
+globalStyle(`${fileFolderButton}:hover, ${fileListingFolderButton}:hover`, { color: '#eaf3f5' });
+globalStyle(`${fileListingFolderRow}:has(${fileListingFolderButton}:hover)`, { borderColor: 'rgba(31,200,181,.35)', background: 'rgba(31,200,181,.08)' });
+globalStyle(`${fileListingFolderDelete}:hover`, { background: 'rgba(255,100,120,.12)', color: '#ff8798' });
 globalStyle(`${spaceCard} h2`, { margin: '0 0 0.6rem', fontSize: '1.55rem', fontWeight: 600 });
 globalStyle(`${spaceCard} p`, { flex: 1, margin: '0 0 1.6rem', color: '#64828c', fontSize: '1.25rem', lineHeight: 1.5 });
 globalStyle(`${spacesGridList} ${spaceCard}`, { flexDirection: 'row', alignItems: 'center', gap: '1.6rem', padding: '1.3rem 1.6rem', borderColor: 'transparent', borderBottom: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '1rem' });
