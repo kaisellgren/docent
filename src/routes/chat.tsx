@@ -76,7 +76,7 @@ function ChatPage() {
   }
 
   return (
-    <div>
+    <div className={styles.chatPage}>
       <TopNavigation viewer={viewer} />
       {!viewer ? (
         <main className={styles.chatUnauthenticated}>
