@@ -431,6 +431,7 @@ globalStyle(`${pageTreeLink}:hover`, { background: 'rgba(20,48,68,.53)' });
 globalStyle(`${treeRow} a`, { display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: '0rem', overflow: 'hidden', color: '#9ab1ba', textDecoration: 'none' });
 globalStyle(`${treeRow} a span`, { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
 globalStyle(`${treeRow} a:hover`, { color: '#eaf3f5' });
+globalStyle(`${treeList} li`, { marginBottom: '0.7rem' });
 globalStyle(`${pageRow}:hover`, { background: 'rgba(20,48,68,.53)' });
 globalStyle(`${pageRevisionList} + ${pageActionButton}`, { marginTop: '1.6rem' });
 globalStyle(`${pageViewCenterLinks} a`, { color: '#9ab1ba', fontSize: '1.4rem', fontWeight: 500, textDecoration: 'none' });

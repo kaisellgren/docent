@@ -43,7 +43,7 @@ type SpaceFileData = Awaited<ReturnType<typeof getSpaceFiles>>;
 type SpaceFolderData = Awaited<ReturnType<typeof getSpaceFolders>>;
 
 export const Route = createFileRoute("/spaces/space/$slug")({
-  validateSearch: z.object({ tab: z.enum(["pages", "files"]).optional().default("pages") }),
+  validateSearch: z.object({ tab: z.enum(["pages", "files"]).optional().default("pages"), folder: z.string().uuid().optional() }),
   loader: async ({ params }) => {
     const viewer = await getViewer();
     if (!viewer) return { viewer, space: null, pages: [], files: [], folders: [] };
@@ -348,15 +348,22 @@ function FilesTab({
   const retryFile = useServerFn(retryFileIngestion);
   const removeFile = useServerFn(deleteFile);
   const router = useRouter();
+  const navigate = Route.useNavigate();
+  const { folder: folderParam } = Route.useSearch();
   const [notice, setNotice] = useState("");
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderParam ?? null);
   const [uploadFolderId, setUploadFolderId] = useState("");
   const [uploadFilename, setUploadFilename] = useState("");
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
+  useEffect(() => { setSelectedFolderId(folderParam ?? null); }, [folderParam]);
+  function selectFolder(folderId: string | null) {
+    setSelectedFolderId(folderId);
+    void navigate({ search: (previous) => ({ ...previous, folder: folderId ?? undefined, tab: "files" as const }) });
+  }
   const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files.filter((file) => !file.folderId);
   const listingFolders = folders.filter((folder) => folder.parentId === selectedFolderId);
   const folderPath = (folder: SpaceFolderData[number]) => {
@@ -434,7 +441,7 @@ function FilesTab({
     if (!window.confirm(`Delete folder “${folder.name}”?`)) return;
     try {
       await removeFolder({ data: { folderId: folder.id } });
-      if (selectedFolderId === folder.id) setSelectedFolderId(null);
+      if (selectedFolderId === folder.id) selectFolder(null);
       setNotice("Folder deleted.");
       await router.invalidate();
     } catch (cause) {
@@ -463,7 +470,7 @@ function FilesTab({
               type="button"
               draggable={viewerIsEditor}
               className={`${selectedFolderId === folder.id ? styles.fileFolderRowSelected : styles.fileFolderButton} ${dropTargetFolderId === folder.id ? styles.fileFolderRowDropTarget : ""}`}
-              onClick={() => setSelectedFolderId(folder.id)}
+              onClick={() => selectFolder(folder.id)}
               onDragStart={() => setDraggedFolderId(folder.id)}
               onDragOver={(event) => { if (draggedFolderId && draggedFolderId !== folder.id) { event.preventDefault(); setDropTargetFolderId(folder.id); } }}
               onDragLeave={() => setDropTargetFolderId(null)}
@@ -513,7 +520,7 @@ function FilesTab({
           <button
             type="button"
             className={`${selectedFolderId === null ? styles.fileFolderRowSelected : styles.fileFolderButton} ${dropTargetFolderId === "__root__" ? styles.fileFolderRowDropTarget : ""}`}
-            onClick={() => setSelectedFolderId(null)}
+            onClick={() => selectFolder(null)}
             onDragOver={(event) => { if (draggedFolderId) { event.preventDefault(); setDropTargetFolderId("__root__"); } }}
             onDragLeave={() => setDropTargetFolderId(null)}
             onDrop={(event) => { event.preventDefault(); if (draggedFolderId) void moveFolderTo(draggedFolderId, null); }}
@@ -552,7 +559,7 @@ function FilesTab({
               <div className={styles.fileListingFolders}>
                 {listingFolders.map((folder) => (
                   <div className={styles.fileListingFolderRow} key={folder.id}>
-                    <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => setSelectedFolderId(folder.id)}><Folder size={15} /><span>{folder.name}</span></button>
+                    <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => selectFolder(folder.id)}><Folder size={15} /><span>{folder.name}</span></button>
                     {viewerIsEditor && <button type="button" className={styles.fileListingFolderDelete} aria-label={`Delete folder ${folder.name}`} onClick={() => { void removeFolderAndRefresh(folder); }}><Trash2 size={14} /></button>}
                   </div>
                 ))}
