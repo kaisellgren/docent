@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { getInlineFileUrl, getPreviewUrl } from '@/features/files/server'
+import { getPreviewUrl } from '@/features/files/server'
+import { previewRequestError, shouldRetryPreviewRequest } from '@/features/files/preview-status'
 import { useServerFn } from '@tanstack/react-start'
 import * as styles from '@/styles/app.css'
 
@@ -12,11 +13,9 @@ export function FilePreviewModal({
   onClose: () => void
 }) {
   const fetchPreview = useServerFn(getPreviewUrl)
-  const fetchInline = useServerFn(getInlineFileUrl)
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const pdfContainerRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     setAttempt(0)
   }, [file?.id])
@@ -29,25 +28,34 @@ export function FilePreviewModal({
     }
     const load = async () => {
       try {
-        const result = await (file.mediaType === 'application/pdf'
-          ? fetchInline({ data: { fileId: file.id } })
-          : fetchPreview({ data: { fileId: file.id } }))
+        const result = await fetchPreview({ data: { fileId: file.id } })
         // Server functions can resolve with a Response-like value for HTTP
         // errors. `fetch` does not reject for 404/500 responses, so inspect
         // the result before treating it as a successful preview URL lookup.
         const responseLike = result as unknown as { ok?: boolean; status?: number; previewUrl?: string }
         if (responseLike.ok === false) {
-          throw new Error(`Preview request failed (${responseLike.status ?? 'unknown'})`)
+          throw Object.assign(new Error(`Preview request failed (${responseLike.status ?? 'unknown'})`), {
+            status: responseLike.status,
+          })
         }
         if (!responseLike.previewUrl) {
-          throw new Error('Preview URL was not returned')
+          throw Object.assign(new Error('Preview URL was not returned'), { status: 500 })
         }
         if (!cancelled) {
           setError('')
           setUrl(responseLike.previewUrl)
         }
-      } catch {
+      } catch (cause) {
         if (cancelled) return
+        const responseLike = cause as { status?: number }
+        if (responseLike.status === 422) {
+          setError(previewRequestError(responseLike.status))
+          return
+        }
+        if (!shouldRetryPreviewRequest(responseLike.status)) {
+          setError(previewRequestError(responseLike.status))
+          return
+        }
         if (attempt >= 14) {
           setError('The preview is not ready yet. Retry indexing and try again.')
           return
@@ -62,33 +70,7 @@ export function FilePreviewModal({
     return () => {
       cancelled = true
     }
-  }, [file?.id, file?.mediaType, attempt])
-  useEffect(() => {
-    if (!file || file.mediaType !== 'application/pdf' || !url || !pdfContainerRef.current) return
-    let cancelled = false
-    void import('pdfjs-dist/legacy/build/pdf.mjs')
-      .then(async (pdfjs) => {
-        const document = await pdfjs.getDocument(url).promise
-        if (cancelled || !pdfContainerRef.current) return
-        pdfContainerRef.current.replaceChildren()
-        for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-          const page = await document.getPage(pageNumber)
-          const viewport = page.getViewport({ scale: 1.35 })
-          const canvas = window.document.createElement('canvas')
-          canvas.width = viewport.width
-          canvas.height = viewport.height
-          canvas.className = styles.filePreviewPdfPage
-          pdfContainerRef.current.appendChild(canvas)
-          await page.render({ canvasContext: canvas.getContext('2d')!, canvas, viewport }).promise
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError('The PDF could not be rendered.')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [file?.id, file?.mediaType, url])
+  }, [file?.id, attempt])
   useEffect(() => {
     if (!file) return
     const close = (event: KeyboardEvent) => {
@@ -121,16 +103,14 @@ export function FilePreviewModal({
         {error ? (
           <p className={styles.filePreviewError}>{error}</p>
         ) : url ? (
-          file.mediaType === 'application/pdf' ? (
-            <div className={styles.filePreviewPdf} ref={pdfContainerRef} />
-          ) : (
-            <iframe
-              className={styles.filePreviewFrame}
-              src={url}
-              title={file.filename}
-              onError={() => setError('The preview is not available yet. Retry file indexing and try again.')}
-            />
-          )
+          <iframe
+            className={styles.filePreviewFrame}
+            src={url}
+            title={file.filename}
+            sandbox=""
+            referrerPolicy="no-referrer"
+            onError={() => setError('The preview is not available yet. Retry file indexing and try again.')}
+          />
         ) : (
           <p className={styles.filePreviewLoading}>Preparing preview…</p>
         )}

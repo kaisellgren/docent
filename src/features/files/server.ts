@@ -309,7 +309,7 @@ export const confirmUpload = createServerFn({ method: 'POST' })
       await db()
     ).transaction(async (transaction) => {
       await transaction.query(
-        sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', updated_at = now() WHERE id = ${data.fileId}`,
+        sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', preview_status = 'pending', preview_error = NULL, updated_at = now() WHERE id = ${data.fileId}`,
       )
       return transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
         INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${data.fileId})
@@ -332,7 +332,7 @@ export const retryFileIngestion = createServerFn({ method: 'POST' })
       `)
       if (!file) throw new Response('File not found', { status: 404 })
       await transaction.query(
-        sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', extraction_error = NULL, updated_at = now() WHERE id = ${file.id}`,
+        sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', extraction_error = NULL, preview_status = 'pending', preview_error = NULL, updated_at = now() WHERE id = ${file.id}`,
       )
       const existing = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
         SELECT id FROM ingestion_job WHERE file_id = ${file.id}
@@ -463,12 +463,24 @@ export const getPreviewUrl = createServerFn({ method: 'GET' })
     await requireSession()
     const file = await (
       await db()
-    ).maybeOne(sql.type(z.object({ previewObjectKey: z.string() }))`
-      SELECT preview_object_key AS "previewObjectKey"
+    ).maybeOne(sql.type(
+      z.object({
+        previewObjectKey: z.string().nullable(),
+        previewStatus: z.enum(['pending', 'processing', 'ready', 'failed']),
+        previewError: z.string().nullable(),
+      }),
+    )`
+      SELECT preview_object_key AS "previewObjectKey", preview_status AS "previewStatus", preview_error AS "previewError"
       FROM stored_file
-      WHERE id = ${data.fileId} AND deleted_at IS NULL AND preview_object_key IS NOT NULL AND preview_status = 'ready'
+      WHERE id = ${data.fileId} AND deleted_at IS NULL
     `)
-    if (!file) throw new Response('A preview is not available for this file yet.', { status: 404 })
+    if (!file) throw new Response('File not found', { status: 410 })
+    if (file.previewStatus === 'failed')
+      throw new Response(`Preview conversion failed${file.previewError ? `: ${file.previewError}` : '.'}`, {
+        status: 422,
+      })
+    if (file.previewStatus !== 'ready' || !file.previewObjectKey)
+      throw new Response('The preview is still being generated.', { status: 409 })
     const [exists] = await bucket().file(file.previewObjectKey).exists()
     if (!exists)
       throw new Response('The preview has not been generated yet. Retry file indexing and try again.', { status: 404 })
@@ -480,28 +492,6 @@ export const getPreviewUrl = createServerFn({ method: 'GET' })
         expires: Date.now() + 10 * 60 * 1000,
         responseDisposition: 'inline',
         responseType: 'text/html',
-      })
-    return { previewUrl }
-  })
-
-export const getInlineFileUrl = createServerFn({ method: 'GET' })
-  .validator((data: unknown) => fileIdSchema.parse(data))
-  .handler(async ({ data }) => {
-    await requireSession()
-    const file = await (
-      await db()
-    ).maybeOne(sql.type(z.object({ objectKey: z.string(), filename: z.string() }))`
-      SELECT object_key AS "objectKey", original_filename AS filename FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
-    `)
-    if (!file) throw new Response('File not found', { status: 404 })
-    const filename = file.filename.replace(/["\\\r\n]/g, '_')
-    const [previewUrl] = await bucket()
-      .file(file.objectKey)
-      .getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + 10 * 60 * 1000,
-        responseDisposition: `inline; filename="${filename}"`,
       })
     return { previewUrl }
   })

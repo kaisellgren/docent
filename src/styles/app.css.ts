@@ -1809,21 +1809,6 @@ export const filePreviewHead = style({
   color: '#eaf3f5',
 })
 export const filePreviewFrame = style({ flex: 1, width: '100%', border: 0, background: '#fff' })
-export const filePreviewPdf = style({
-  flex: 1,
-  overflow: 'auto',
-  padding: '2rem',
-  background: '#39434d',
-  textAlign: 'center',
-})
-export const filePreviewPdfPage = style({
-  display: 'block',
-  maxWidth: '100%',
-  height: 'auto',
-  margin: '0 auto 2rem',
-  background: '#fff',
-  boxShadow: '0 0.8rem 2rem rgba(0,0,0,.35)',
-})
 export const filePreviewLoading = style({ margin: 'auto', color: '#9ab1ba' })
 export const filePreviewError = style({ margin: 'auto', padding: '2rem', color: '#ffb4bf', textAlign: 'center' })
 export const filePreviewLink = style({ cursor: 'pointer' })

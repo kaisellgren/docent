@@ -7,6 +7,7 @@ import { db, sql } from '@/server/db'
 import { env } from '@/server/env'
 import { embedText } from '@/features/ai/vertex'
 import { chunkText } from '@/features/ingestion/chunk'
+import { generateFilePreview } from '@/features/ingestion/preview'
 
 const jobSchema = z.object({
   id: z.string().uuid(),
@@ -18,67 +19,15 @@ const pendingJobSchema = z.object({ id: z.string().uuid() })
 const fileSchema = z.object({
   id: z.string().uuid(),
   objectKey: z.string(),
-  mediaType: z.string(),
+  mediaType: z.enum([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.oasis.opendocument.text',
+  ]),
   filename: z.string(),
 })
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function previewDocument(title: string, body: string) {
-  const safeBody = body
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{margin:0;padding:2rem 2.5rem;background:#fff;color:#20252b;font:16px/1.65 Inter,system-ui,sans-serif}main{max-width:56rem;margin:0 auto}h1{font-size:1.6rem;line-height:1.25;border-bottom:1px solid #d9e0e7;padding-bottom:1rem;margin:0 0 2rem}p{margin:0 0 1rem;white-space:pre-wrap}ul,ol{padding-left:1.5rem}img{max-width:100%}</style></head><body><main><h1>${escapeHtml(title)}</h1>${safeBody}</main></body></html>`
-}
-
-function odtInlineHtml(value: string, emphasis: Set<string>): string {
-  const withSpans: string = value
-    .replace(/<text:span\b([^>]*)>([\s\S]*?)<\/text:span>/gi, (_match, attributes: string, content: string) => {
-      const style = /text:style-name=["']([^"']+)["']/i.exec(attributes)?.[1] ?? ''
-      const inner: string = odtInlineHtml(content, emphasis)
-      if (emphasis.has(style)) return `<strong>${inner}</strong>`
-      if (/italic|oblique/i.test(style)) return `<em>${inner}</em>`
-      return inner
-    })
-    .replace(/<text:tab\s*\/?>(?!$)/gi, '    ')
-    .replace(/<text:s(?:\s+text:c="(\d+)")?\s*\/>/gi, (_match, count?: string) => ' '.repeat(Number(count ?? 1)))
-  return escapeHtml(withSpans.replace(/<[^>]+>/g, ''))
-    .replace(/&amp;lt;/g, '&lt;')
-    .replace(/&amp;gt;/g, '&gt;')
-}
-
-function odtHtml(xml: string, stylesXml: string | undefined) {
-  const emphasis = new Set<string>()
-  for (const match of stylesXml?.matchAll(
-    /<style:style\b[^>]*style:name=["']([^"']+)["'][\s\S]*?<style:text-properties\b[^>]*(?:fo:font-weight|style:font-weight-asian)=["']bold["']/gi,
-  ) ?? [])
-    emphasis.add(match[1] ?? '')
-  const blocks: string[] = []
-  for (const match of xml.matchAll(/<text:(h|p)\b([^>]*)>([\s\S]*?)<\/text:\1>/gi)) {
-    const kind =
-      match[1] === 'h'
-        ? `h${Math.min(6, Number(/text:outline-level=["'](\d+)["']/i.exec(match[2] ?? '')?.[1] ?? 2))}`
-        : 'p'
-    blocks.push(`<${kind}>${odtInlineHtml(match[3] ?? '', emphasis)}</${kind}>`)
-  }
-  const lists = [...xml.matchAll(/<text:list\b[^>]*>([\s\S]*?)<\/text:list>/gi)]
-  for (const list of lists) {
-    const items = [...(list[1] ?? '').matchAll(/<text:list-item\b[^>]*>([\s\S]*?)<\/text:list-item>/gi)]
-      .map((item) => `<li>${odtInlineHtml(item[1] ?? '', emphasis)}</li>`)
-      .join('')
-    blocks.push(`<ul>${items}</ul>`)
-  }
-  return blocks.join('')
-}
-
-async function renderFile(file: z.infer<typeof fileSchema>) {
+async function extractFileText(file: z.infer<typeof fileSchema>) {
   const projectId = env().GOOGLE_CLOUD_PROJECT
   const storage = projectId ? new Storage({ projectId }) : new Storage()
   const bucket = storage.bucket(env().GCS_BUCKET!)
@@ -93,17 +42,15 @@ async function renderFile(file: z.infer<typeof fileSchema>) {
       ),
     )
     const text = pages.join('\n\n')
-    return { text, html: previewDocument(file.filename, pages.map((page) => `<p>${escapeHtml(page)}</p>`).join('')) }
+    return { text, bytes }
   }
   if (file.mediaType.includes('wordprocessingml')) {
     const raw = await mammoth.extractRawText({ buffer: bytes })
-    const rendered = await mammoth.convertToHtml({ buffer: bytes })
-    return { text: raw.value, html: previewDocument(file.filename, rendered.value) }
+    return { text: raw.value, bytes }
   }
   const archive = await JSZip.loadAsync(bytes)
   const xml = await archive.file('content.xml')?.async('string')
   if (!xml) throw new Error('ODT content.xml is missing')
-  const stylesXml = await archive.file('styles.xml')?.async('string')
   const paragraphs = [...xml.matchAll(/<text:p[^>]*>([\s\S]*?)<\/text:p>/gi)]
     .map((match) =>
       (match[1] ?? '')
@@ -118,7 +65,7 @@ async function renderFile(file: z.infer<typeof fileSchema>) {
     )
     .filter(Boolean)
   const text = paragraphs.join('\n\n')
-  return { text, html: previewDocument(file.filename, odtHtml(xml, stylesXml)) }
+  return { text, bytes }
 }
 
 export async function processIngestionJob(jobId: string) {
@@ -132,7 +79,8 @@ export async function processIngestionJob(jobId: string) {
   try {
     let text = ''
     let pageId: string | undefined
-    let renderedHtml = ''
+    let previewFile: z.infer<typeof fileSchema> | undefined
+    let previewBytes: Buffer | undefined
     if (job.contentKind === 'page') {
       const row = await pool.one(
         sql.type(
@@ -148,9 +96,10 @@ export async function processIngestionJob(jobId: string) {
           fileSchema,
         )`SELECT id, object_key AS "objectKey", media_type AS "mediaType", original_filename AS filename FROM stored_file WHERE id = ${job.fileId}`,
       )
-      const rendered = await renderFile(file)
-      text = rendered.text
-      renderedHtml = rendered.html
+      const extracted = await extractFileText(file)
+      text = extracted.text
+      previewFile = file
+      previewBytes = extracted.bytes
       await pool.query(sql.unsafe`DELETE FROM content_chunk WHERE file_id = ${job.fileId}`)
     }
     for (const [ordinal, value] of chunkText(text).entries()) {
@@ -160,20 +109,32 @@ export async function processIngestionJob(jobId: string) {
       )
     }
     if (job.fileId) {
-      const previewObjectKey = `previews/${job.fileId}.html`
-      const projectId = env().GOOGLE_CLOUD_PROJECT
-      const storage = projectId ? new Storage({ projectId }) : new Storage()
-      await storage
-        .bucket(env().GCS_BUCKET!)
-        .file(previewObjectKey)
-        .save(Buffer.from(renderedHtml, 'utf8'), {
-          resumable: false,
-          contentType: 'text/html; charset=utf-8',
-          metadata: { cacheControl: 'private, max-age=300' },
-        })
       await pool.query(
-        sql.unsafe`UPDATE stored_file SET extraction_status = 'ready', extraction_error = NULL, preview_object_key = ${previewObjectKey}, preview_status = 'ready', preview_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
+        sql.unsafe`UPDATE stored_file SET extraction_status = 'ready', extraction_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
       )
+      try {
+        if (!previewFile || !previewBytes) throw new Error('File preview source is unavailable')
+        const previewHtml = await generateFilePreview({ ...previewFile, bytes: previewBytes })
+        const previewObjectKey = `previews/${job.fileId}.html`
+        const projectId = env().GOOGLE_CLOUD_PROJECT
+        const storage = projectId ? new Storage({ projectId }) : new Storage()
+        await storage
+          .bucket(env().GCS_BUCKET!)
+          .file(previewObjectKey)
+          .save(Buffer.from(previewHtml, 'utf8'), {
+            resumable: false,
+            contentType: 'text/html; charset=utf-8',
+            metadata: { cacheControl: 'private, max-age=300' },
+          })
+        await pool.query(
+          sql.unsafe`UPDATE stored_file SET preview_object_key = ${previewObjectKey}, preview_status = 'ready', preview_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
+        )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown preview conversion error'
+        await pool.query(
+          sql.unsafe`UPDATE stored_file SET preview_status = 'failed', preview_error = ${message}, updated_at = now() WHERE id = ${job.fileId}`,
+        )
+      }
     }
     await pool.query(
       sql.unsafe`UPDATE ingestion_job SET status = 'ready', completed_at = now(), error_message = NULL WHERE id = ${job.id}`,
