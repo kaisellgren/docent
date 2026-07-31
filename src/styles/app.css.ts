@@ -368,6 +368,8 @@ globalStyle(`${termsPage} h2`, { margin: '3.2rem 0 1rem', color: '#eaf3f5', font
 globalStyle(`${termsPage} p`, { margin: '0 0 1.6rem' });
 globalStyle('button:focus-visible, input:focus-visible', { outline: '0rem solid #1fc8b5', outlineOffset: 2 });
 globalStyle('button:disabled', { cursor: 'not-allowed', opacity: .6 });
+globalStyle('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]), textarea, select', { transition: 'border-color .18s ease, background .18s ease, box-shadow .18s ease' });
+globalStyle('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):hover, textarea:hover, select:hover', { borderColor: 'rgba(117,166,255,.58)', backgroundColor: 'rgba(15,36,52,.9)', boxShadow: '0 0 0.8rem rgba(62,123,250,.12)' });
 globalStyle(`body:has(${chatPage})`, { overflow: 'hidden' });
 globalStyle(`${appShell}:has(${chatPage}) > ${appFooter}`, { display: 'none' });
 globalStyle(`${homeConsoleInput}::placeholder`, { color: '#9ab1ba', opacity: 1 });
