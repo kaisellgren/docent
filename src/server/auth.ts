@@ -1,6 +1,7 @@
 import { Google, generateCodeVerifier, generateState } from 'arctic';
 import { SignJWT, jwtVerify } from 'jose';
 import { getCookie, setCookie } from '@tanstack/react-start/server';
+import { z } from 'zod';
 import { db, sql } from './db';
 import { editorEmails, env } from './env';
 
@@ -48,7 +49,16 @@ export async function currentSession(): Promise<Session | undefined> {
   try {
     const { payload } = await jwtVerify(token, encoder.encode(env().SESSION_SECRET));
     if (typeof payload.userId !== 'string' || typeof payload.email !== 'string' || typeof payload.name !== 'string') return undefined;
-    return { userId: payload.userId, email: payload.email, name: payload.name, avatarUrl: typeof payload.avatarUrl === 'string' ? payload.avatarUrl : null, isEditor: editorEmails().has(payload.email.toLowerCase()) };
+    let avatarUrl = typeof payload.avatarUrl === 'string' ? payload.avatarUrl : null;
+    if (!avatarUrl) {
+      try {
+        const user = await (await db()).maybeOne(sql.type(z.object({ avatarUrl: z.string().nullable() }))`SELECT avatar_url AS "avatarUrl" FROM app_user WHERE id = ${payload.userId}`);
+        avatarUrl = user?.avatarUrl ?? null;
+      } catch {
+        // Preserve authentication when the optional profile lookup is unavailable.
+      }
+    }
+    return { userId: payload.userId, email: payload.email, name: payload.name, avatarUrl, isEditor: editorEmails().has(payload.email.toLowerCase()) };
   } catch {
     return undefined;
   }
