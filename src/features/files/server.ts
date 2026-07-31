@@ -162,7 +162,7 @@ export const confirmUpload = createServerFn({ method: 'POST' })
       await transaction.query(sql.unsafe`UPDATE stored_file SET extraction_status = 'pending', updated_at = now() WHERE id = ${data.fileId}`);
       return transaction.one(sql.type(z.object({ id: z.string().uuid() }))`
         INSERT INTO ingestion_job (content_kind, file_id) VALUES ('file', ${data.fileId})
-        ON CONFLICT (file_id) DO UPDATE SET status = 'pending', error_message = NULL, completed_at = NULL
+        ON CONFLICT (page_revision_id, file_id) DO UPDATE SET status = 'pending', error_message = NULL, completed_at = NULL
         RETURNING id
       `);
     });
