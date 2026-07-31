@@ -329,6 +329,11 @@ globalStyle(`${pageMiniTreeRow}:hover, ${pageTocLink}:hover, ${pageTocSubLink}:h
 globalStyle('*', { boxSizing: 'border-box' });
 globalStyle('html', { fontSize: '62.5%' });
 globalStyle('html, body', { margin: '0rem', minHeight: '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif', WebkitFontSmoothing: 'antialiased' });
+globalStyle('html', { scrollbarColor: '#1f8f8b #0a1826', scrollbarWidth: 'thin' });
+globalStyle('*::-webkit-scrollbar', { width: '0.9rem', height: '0.9rem' });
+globalStyle('*::-webkit-scrollbar-track', { background: '#0a1826' });
+globalStyle('*::-webkit-scrollbar-thumb', { border: '0.2rem solid #0a1826', borderRadius: '99.9rem', background: 'linear-gradient(180deg, #1fc8b5, #3e7bfa)' });
+globalStyle('*::-webkit-scrollbar-thumb:hover', { background: 'linear-gradient(180deg, #6fa0ff, #1fc8b5)' });
 globalStyle('h1, h2, h3, .display', { fontFamily: '"Space Grotesk", Inter, sans-serif', letterSpacing: '-.01em' });
 globalStyle('a:hover', { color: '#1fc8b5' });
 globalStyle(`${appFooter} a`, { color: '#64828c', textDecoration: 'none' });
