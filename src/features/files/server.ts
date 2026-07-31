@@ -265,10 +265,11 @@ export const getDownloadUrl = createServerFn({ method: 'GET' })
   .validator((data: unknown) => fileIdSchema.parse(data))
   .handler(async ({ data }) => {
     await requireSession();
-    const file = await (await db()).maybeOne(sql.type(z.object({ objectKey: z.string() }))`
-      SELECT object_key AS "objectKey" FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
+    const file = await (await db()).maybeOne(sql.type(z.object({ objectKey: z.string(), filename: z.string() }))`
+      SELECT object_key AS "objectKey", original_filename AS filename FROM stored_file WHERE id = ${data.fileId} AND deleted_at IS NULL
     `);
     if (!file) throw new Response('File not found', { status: 404 });
-    const [downloadUrl] = await bucket().file(file.objectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 15 * 60 * 1000 });
+    const filename = file.filename.replace(/["\\\r\n]/g, '_');
+    const [downloadUrl] = await bucket().file(file.objectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 15 * 60 * 1000, responseDisposition: `attachment; filename="${filename}"` });
     return { downloadUrl };
   });
