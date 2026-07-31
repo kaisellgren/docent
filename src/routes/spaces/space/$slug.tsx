@@ -1,4 +1,4 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute, notFound, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import {
   ChevronDown,
@@ -11,6 +11,7 @@ import {
   Plus,
   Search,
   Star,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
@@ -22,6 +23,7 @@ import {
   getDownloadUrl,
   getSpaceFiles,
   getSpaceFolders,
+  deleteFile,
   retryFileIngestion,
 } from "@/features/files/server";
 import { getSpace, getSpacePages, toggleSpaceFavorite } from "@/features/wiki/server";
@@ -203,8 +205,6 @@ function SpacePage() {
             >
               Files <span className={styles.spaceTabCount}>{files.length}</span>
             </Link>
-            <span className={styles.spaceTabMuted}>People</span>
-            <span className={styles.spaceTabMuted}>Settings</span>
           </div>
         </section>
         {tab === "files" ? (
@@ -349,6 +349,8 @@ function FilesTab({
   const addFolder = useServerFn(createFolder);
   const download = useServerFn(getDownloadUrl);
   const retryFile = useServerFn(retryFileIngestion);
+  const removeFile = useServerFn(deleteFile);
+  const router = useRouter();
   const [notice, setNotice] = useState("");
   const [folderName, setFolderName] = useState("");
   const [parentId, setParentId] = useState("");
@@ -415,6 +417,12 @@ function FilesTab({
     await retryFile({ data: { fileId } });
     setNotice("Indexing restarted.");
     window.location.reload();
+  }
+  async function remove(file: SpaceFileData[number]) {
+    if (!window.confirm(`Delete “${file.filename}”?`)) return;
+    await removeFile({ data: { fileId: file.id } });
+    setNotice("File deleted.");
+    await router.invalidate();
   }
   const renderFolders = (parent: string | null): ReactNode => (
     <ul className={styles.fileFolderTree}>
@@ -541,6 +549,7 @@ function FilesTab({
                   >
                     <Download size={14} />
                   </button>
+                  {viewerIsEditor && <button type="button" className={styles.detailButton} onClick={() => { void remove(file); }}><Trash2 size={14} />Delete</button>}
                 </div>
               ))}
             </div>
