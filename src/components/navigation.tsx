@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import * as styles from "@/styles/app.css";
 
-export type NavigationViewer = { name: string; email: string; isEditor: boolean } | undefined;
+export type NavigationViewer = { name: string; email: string; avatarUrl?: string | null; isEditor: boolean } | undefined;
 
 type TopNavigationProps = {
   viewer: NavigationViewer;
@@ -67,7 +67,7 @@ function AvatarMenu({ viewer }: { viewer: NavigationViewer & { name: string; ema
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        {initials(viewer.name)}
+        {viewer.avatarUrl ? <img className={styles.pageViewAvatarImage} src={viewer.avatarUrl} alt="" referrerPolicy="no-referrer" /> : initials(viewer.name)}
       </button>
       {open && (
         <div className={styles.pageAvatarDropdown} role="menu">

@@ -9,7 +9,7 @@ const OAUTH_STATE_COOKIE = 'docent_oauth_state';
 const OAUTH_VERIFIER_COOKIE = 'docent_oauth_verifier';
 const encoder = new TextEncoder();
 
-type Session = { userId: string; email: string; name: string; isEditor: boolean };
+type Session = { userId: string; email: string; name: string; avatarUrl?: string | null; isEditor: boolean };
 type GoogleProfile = { sub: string; email: string; name?: string; picture?: string };
 
 export function googleSignInConfigurationProblem(): string | undefined {
@@ -48,7 +48,7 @@ export async function currentSession(): Promise<Session | undefined> {
   try {
     const { payload } = await jwtVerify(token, encoder.encode(env().SESSION_SECRET));
     if (typeof payload.userId !== 'string' || typeof payload.email !== 'string' || typeof payload.name !== 'string') return undefined;
-    return { userId: payload.userId, email: payload.email, name: payload.name, isEditor: editorEmails().has(payload.email.toLowerCase()) };
+    return { userId: payload.userId, email: payload.email, name: payload.name, avatarUrl: typeof payload.avatarUrl === 'string' ? payload.avatarUrl : null, isEditor: editorEmails().has(payload.email.toLowerCase()) };
   } catch {
     return undefined;
   }
@@ -94,7 +94,7 @@ export async function completeGoogleSignIn(code: string, state: string): Promise
       last_seen_at = now()
     RETURNING id
   `) as { id: string };
-  const session: Session = { userId: user.id, email: profile.email.toLowerCase(), name: profile.name ?? profile.email, isEditor: editorEmails().has(profile.email.toLowerCase()) };
+  const session: Session = { userId: user.id, email: profile.email.toLowerCase(), name: profile.name ?? profile.email, avatarUrl: profile.picture ?? null, isEditor: editorEmails().has(profile.email.toLowerCase()) };
   setCookie(SESSION_COOKIE, await signSession(session), secureCookieOptions());
   setCookie(OAUTH_STATE_COOKIE, '', secureCookieOptions(0));
   setCookie(OAUTH_VERIFIER_COOKIE, '', secureCookieOptions(0));

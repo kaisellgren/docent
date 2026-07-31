@@ -291,6 +291,7 @@ export const pageViewBrandMark = style({ width: '2.4rem', height: '2.4rem', colo
 export const pageViewCenterLinks = style({ position: 'absolute', left: '50%', display: 'flex', alignItems: 'center', height: '100%', gap: '2.8rem', transform: 'translateX(-50%)', '@media': { 'screen and (max-width: 70rem)': { display: 'none' } } });
 export const pageViewNavRight = style({ display: 'flex', alignItems: 'center', gap: '1rem' });
 export const pageViewAvatar = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.2rem', height: '3.2rem', borderRadius: '50%', background: 'linear-gradient(135deg, #3e7bfa, #1fc8b5)', color: '#04120f', fontSize: '1.1rem', fontWeight: 700 });
+export const pageViewAvatarImage = style({ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' });
 export const appFooter = style({ borderTop: '0.1rem solid rgba(255,255,255,.09)', marginTop: '5rem' });
 export const appFooterInner = style({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.2rem', padding: '3rem 0', color: '#64828c', fontSize: '1.25rem' });
 export const termsPage = style({ maxWidth: '82rem', margin: '4.8rem auto 10rem', padding: '2.8rem', background: '#0f2434', border: '0.1rem solid rgba(255,255,255,.1)', borderRadius: '1.6rem', color: '#9ab1ba', fontSize: '1.55rem', lineHeight: 1.75 });
