@@ -1,5 +1,14 @@
 import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 
+const thinkingGlow = keyframes({
+  '0%, 100%': { transform: 'scale(.92) rotate(-8deg)', opacity: .65, boxShadow: '0 0 0 rgba(31,200,181,0)' },
+  '50%': { transform: 'scale(1.08) rotate(8deg)', opacity: 1, boxShadow: '0 0 1.8rem rgba(31,200,181,.42)' },
+});
+const thinkingDotPulse = keyframes({
+  '0%, 60%, 100%': { transform: 'translateY(0)', opacity: .35 },
+  '30%': { transform: 'translateY(-.35rem)', opacity: 1 },
+});
+
 export const appShell = style({ minHeight: '100vh', background: 'linear-gradient(160deg, #081420, #0c2431)', color: '#eaf3f5' });
 export const shell = style({ width: 'min(112rem, calc(100% - 3.2rem))', margin: '0 auto' });
 export const nav = style({ height: '7.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.1rem solid rgba(255,255,255,.1)' });
@@ -55,7 +64,12 @@ export const chatMessageUserBody = style([chatMessageBody, { borderColor: 'rgba(
 export const chatMessageReferences = style({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.8rem' });
 export const chatMessageReferenceLink = style({ color: '#1fc8b5', fontSize: '1.1rem', textDecoration: 'none' });
 export const chatInlineCitation = style({ color: '#1fc8b5', fontWeight: 600, textDecoration: 'none' });
-export const chatThinking = style({ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64828c', fontSize: '1.25rem' });
+export const chatThinking = style({ display: 'flex', alignItems: 'center', gap: '0.7rem', color: '#9ab1ba', fontSize: '1.25rem' });
+export const chatThinkingIcon = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.8rem', height: '2.8rem', border: '0.1rem solid rgba(31,200,181,.35)', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(31,200,181,.2), rgba(62,123,250,.2))', color: '#1fc8b5', animation: `${thinkingGlow} 1.8s ease-in-out infinite` });
+export const chatThinkingDots = style({ display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.2rem' });
+export const chatThinkingDot = style({ width: '0.45rem', height: '0.45rem', borderRadius: '50%', background: 'linear-gradient(135deg, #1fc8b5, #6fa0ff)', animation: `${thinkingDotPulse} 1.2s ease-in-out infinite` });
+globalStyle(`${chatThinkingDot}:nth-child(2)`, { animationDelay: '0.15s' });
+globalStyle(`${chatThinkingDot}:nth-child(3)`, { animationDelay: '0.3s' });
 export const chatComposer = style({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'end', gap: '0.8rem 1rem', padding: '1rem', border: '0.1rem solid rgba(117,166,255,.4)', borderRadius: '1.4rem', background: '#0f2434', boxShadow: '0 1rem 3rem rgba(2,10,16,.35)' });
 export const chatComposerInput = style({ flex: 1, minHeight: '4.4rem', maxHeight: '14rem', overflowY: 'hidden', padding: '1rem 0.4rem', border: 0, outline: 0, resize: 'none', background: 'transparent', color: '#eaf3f5', fontFamily: 'inherit', fontSize: '1.45rem', lineHeight: 1.5 });
 export const chatComposerButton = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.8rem', height: '3.8rem', border: 0, borderRadius: '1rem', background: 'linear-gradient(135deg, #1fc8b5, #3e7bfa)', color: '#04120f', cursor: 'pointer' });

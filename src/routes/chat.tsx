@@ -150,7 +150,7 @@ function ChatPage() {
               ) : messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}
-              {loading && <div className={styles.chatThinking}><span /><span /><span /> Docent is searching your spaces…</div>}
+              {loading && <div className={styles.chatThinking} role="status" aria-live="polite"><span className={styles.chatThinkingIcon}><Sparkles size={15} /></span><span className={styles.chatThinkingDots}><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /><i className={styles.chatThinkingDot} /></span><span>Docent is weaving an answer…</span></div>}
             </div>
             <form className={styles.chatComposer} onSubmit={submit}>
               <textarea
