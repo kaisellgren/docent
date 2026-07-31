@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Search, Send } from "lucide-react";
-import { TopNavigation } from "@/components/navigation";
+import { GoogleMark, TopNavigation } from "@/components/navigation";
 import { currentSession } from "@/server/auth";
 import { getRecentPages } from "@/features/wiki/server";
 import * as styles from "@/styles/app.css";
@@ -39,8 +39,7 @@ function HomePage() {
             <span className={styles.gradient}>It already knows.</span>
           </h1>
           <p className={styles.subhead}>
-            Every space, page and decision your team has written down — searchable in one
-            conversation, with the source pages cited every time.
+            Find answers in your team’s spaces and pages, with links back to the original source.
           </p>
           {viewer ? (
             <div className={styles.homeConsole}>
@@ -64,8 +63,9 @@ function HomePage() {
               </div>
             </div>
           ) : (
-            <a className={styles.primaryButton} href="/auth/google">
-              Sign in to ask Docent
+            <a className={styles.pageActionButton} href="/auth/google">
+              <GoogleMark />
+              Sign in with Google
             </a>
           )}
         </div>
