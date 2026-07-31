@@ -312,7 +312,7 @@ function RecentFiles({ files, spaceSlug }: { files: SpaceFileData; spaceSlug: st
               <span className={styles.recentFileDetails}>
                 <b>{file.filename}</b>
                 <small>
-                  {file.folderName ?? "Unfiled"} · {relativeTime(file.createdAt)}
+                  {file.folderName ?? "No folder"} · {relativeTime(file.createdAt)}
                 </small>
               </span>
               <span className={styles.fileLabels}>
@@ -546,7 +546,7 @@ function FilesTab({
                   />
                 </label>
                 <input name="tags" placeholder="labels, comma separated" />
-                <FancySelect name="folderId" value={uploadFolderId} onChange={setUploadFolderId} options={[{ value: "", label: "Unfiled" }, ...folders.map((folder) => ({ value: folder.id, label: folderPath(folder) }))]} />
+                <FancySelect name="folderId" value={uploadFolderId} onChange={setUploadFolderId} options={[{ value: "", label: "No folder" }, ...folders.map((folder) => ({ value: folder.id, label: folderPath(folder) }))]} />
                 <button className={styles.detailPrimaryButton}>Add file</button>
               </form>
             )}
@@ -570,7 +570,6 @@ function FilesTab({
                   <div className={styles.spaceFileMain}>
                     <b>{file.filename}</b>
                     <small>
-                      {file.folderName ?? "Unfiled"} ·{" "}
                       {relativeTime(file.createdAt)}
                     </small>
                   </div>
