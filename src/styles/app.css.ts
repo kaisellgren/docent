@@ -228,6 +228,7 @@ export const treeSearchInput = style({ width: '100%', border: 0, outline: 0, bac
 export const detailPageTree = style({ color: '#9ab1ba' });
 export const treeList = style({ margin: '0rem', padding: '0rem', paddingLeft: '1.4rem', borderLeft: '0.1rem solid rgba(255,255,255,.09)', listStyle: 'none' });
 export const treeRow = style({ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: '0rem', margin: '0.1rem 0', borderRadius: '0.8rem', fontSize: '1.35rem' });
+export const treeRowDropTarget = style({ outline: '0.1rem dashed #1fc8b5', outlineOffset: '-0.1rem', background: 'rgba(31,200,181,.16)' });
 export const treeTwist = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '2.2rem', flexShrink: 0, padding: '0rem', border: 0, background: 'transparent', color: '#64828c', cursor: 'pointer' });
 export const treeTwistHidden = style({ visibility: 'hidden' });
 export const contentHead = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.6rem', marginBottom: '1.6rem' });

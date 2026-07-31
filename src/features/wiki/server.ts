@@ -13,6 +13,7 @@ const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
 const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
+const movePageSchema = z.object({ pageId: z.string().uuid(), destinationParentId: z.string().uuid().nullable() });
 const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), pageCount: z.number().int(), updatedAt: z.string(), isFavorite: z.boolean() });
 const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string(), ingestionStatus: ingestionStatusSchema.nullable(), ingestionError: z.string().nullable() });
 
@@ -222,6 +223,36 @@ export const createPage = createServerFn({ method: 'POST' })
     });
     await enqueueIngestionJob(result.jobId);
     return result;
+  });
+
+export const movePage = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => movePageSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireEditor();
+    const pool = await db();
+    const page = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }))`
+      SELECT id, space_id AS "spaceId" FROM wiki_page WHERE id = ${data.pageId} AND deleted_at IS NULL
+    `);
+    if (!page) throw new Response('Page not found', { status: 404 });
+    if (data.destinationParentId === data.pageId) throw new Response('A page cannot be moved under itself.', { status: 400 });
+    if (data.destinationParentId) {
+      const parent = await pool.maybeOne(sql.type(z.object({ id: z.string().uuid() }))`
+        SELECT id FROM wiki_page WHERE id = ${data.destinationParentId} AND space_id = ${page.spaceId} AND deleted_at IS NULL
+      `);
+      if (!parent) throw new Response('Destination page not found', { status: 404 });
+      const descendant = await pool.one(sql.type(z.object({ isDescendant: z.boolean() }))`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM wiki_page WHERE id = ${data.pageId}
+          UNION ALL
+          SELECT child.id FROM wiki_page child JOIN descendants ancestor ON child.parent_page_id = ancestor.id
+          WHERE child.deleted_at IS NULL
+        )
+        SELECT EXISTS (SELECT 1 FROM descendants WHERE id = ${data.destinationParentId}) AS "isDescendant"
+      `);
+      if (descendant.isDescendant) throw new Response('A page cannot be moved under one of its descendants.', { status: 400 });
+    }
+    await pool.query(sql.unsafe`UPDATE wiki_page SET parent_page_id = ${data.destinationParentId}, updated_at = now() WHERE id = ${data.pageId} AND deleted_at IS NULL`);
+    return { ok: true };
   });
 
 export const updatePage = createServerFn({ method: 'POST' })

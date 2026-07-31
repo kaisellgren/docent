@@ -28,7 +28,7 @@ import {
   deleteFile,
   retryFileIngestion,
 } from "@/features/files/server";
-import { getSpace, getSpacePages, toggleSpaceFavorite, updateSpace } from "@/features/wiki/server";
+import { getSpace, getSpacePages, movePage, toggleSpaceFavorite, updateSpace } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
 import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
 import { FancySelect } from "@/components/fancy-select";
@@ -63,6 +63,7 @@ function SpacePage() {
   const { viewer, space, pages, files, folders } = Route.useLoaderData();
   const router = useRouter();
   const toggleFavorite = useServerFn(toggleSpaceFavorite);
+  const movePageFn = useServerFn(movePage);
   const saveSpace = useServerFn(updateSpace);
   const { tab } = Route.useSearch();
   const [query, setQuery] = useState("");
@@ -70,6 +71,8 @@ function SpacePage() {
   const [flatList, setFlatList] = useState(false);
   const [starred, setStarred] = useState(space?.isFavorite ?? false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
+  const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
   const [editingSpace, setEditingSpace] = useState(false);
   const [spaceName, setSpaceName] = useState(space?.name ?? "");
   const [spaceDescription, setSpaceDescription] = useState(space?.description ?? "");
@@ -115,6 +118,17 @@ function SpacePage() {
       else next.add(id);
       return next;
     });
+  }
+  async function movePageTo(pageId: string, destinationParentId: string) {
+    try {
+      await movePageFn({ data: { pageId, destinationParentId } });
+      await router.invalidate();
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : "Page could not be moved.");
+    } finally {
+      setDraggedPageId(null);
+      setDropTargetPageId(null);
+    }
   }
   async function setFavorite() {
     if (!space) return;
@@ -248,7 +262,7 @@ function SpacePage() {
                 />
               </label>
               <div className={styles.detailPageTree}>
-                {renderTree(null, treePages, collapsed, toggleCollapsed)}
+                {renderTree(null, treePages, collapsed, toggleCollapsed, viewer.isEditor, draggedPageId, dropTargetPageId, setDraggedPageId, setDropTargetPageId, movePageTo)}
               </div>
               {viewer.isEditor && (
                 <Link className={styles.treeAdd} to="/spaces/new" search={{ spaceId: space.id, parentPageId: "" }}>
@@ -629,6 +643,12 @@ function renderTree(
   pages: SpacePageData,
   collapsed: Set<string>,
   toggle: (id: string) => void,
+  viewerIsEditor: boolean,
+  draggedPageId: string | null,
+  dropTargetPageId: string | null,
+  setDraggedPageId: (id: string | null) => void,
+  setDropTargetPageId: (id: string | null) => void,
+  movePageTo: (pageId: string, destinationParentId: string) => void,
 ): ReactNode {
   const branch = pages
     .filter((page) => page.parentPageId === parentId)
@@ -640,7 +660,15 @@ function renderTree(
         const hasChildren = pages.some((child) => child.parentPageId === page.id);
         return (
           <li key={page.id}>
-            <div className={styles.treeRow}>
+            <div
+              className={`${styles.treeRow} ${dropTargetPageId === page.id ? styles.treeRowDropTarget : ""}`}
+              draggable={viewerIsEditor}
+              onDragStart={() => setDraggedPageId(page.id)}
+              onDragOver={(event) => { if (draggedPageId && draggedPageId !== page.id) { event.preventDefault(); setDropTargetPageId(page.id); } }}
+              onDragLeave={() => setDropTargetPageId(null)}
+              onDrop={(event) => { event.preventDefault(); if (draggedPageId && draggedPageId !== page.id) movePageTo(draggedPageId, page.id); }}
+              onDragEnd={() => { setDraggedPageId(null); setDropTargetPageId(null); }}
+            >
               <button
                 type="button"
                 className={`${styles.treeTwist} ${!hasChildren ? styles.treeTwistHidden : ""}`}
@@ -656,7 +684,7 @@ function renderTree(
             </div>
             {hasChildren &&
               !collapsed.has(page.id) &&
-              renderTree(page.id, pages, collapsed, toggle)}
+              renderTree(page.id, pages, collapsed, toggle, viewerIsEditor, draggedPageId, dropTargetPageId, setDraggedPageId, setDropTargetPageId, movePageTo)}
           </li>
         );
       })}
