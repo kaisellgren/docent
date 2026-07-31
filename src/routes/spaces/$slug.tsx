@@ -94,7 +94,7 @@ function PageView() {
   const parentPath = getParentPath(page, spacePages);
 
   return <div>
-    <TopNavigation viewer={viewer} />
+    <TopNavigation viewer={viewer} createPageContext={{ spaceId: page.spaceId, parentPageId: page.parentPageId ?? "" }} />
     <div className={styles.pageActionBar}>
       <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
         <div className={styles.pageBreadcrumb}><Link className={styles.pageBreadcrumbLink} to="/spaces">Spaces</Link><span>/</span><Link className={styles.pageBreadcrumbLink} to="/spaces/space/$slug" params={{ slug: page.spaceSlug }}>{page.spaceName}</Link>{parentPath && <><span>/</span><span className={styles.pageBreadcrumbLink}>{parentPath}</span></>}<span>/</span><span className={styles.pageBreadcrumbCurrent}>{page.title}</span></div>

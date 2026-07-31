@@ -108,7 +108,7 @@ function SpacePage() {
 
   return (
     <div>
-      <TopNavigation viewer={viewer} />
+      <TopNavigation viewer={viewer} createPageContext={{ spaceId: space.id }} />
       <div className={styles.pageActionBar}>
         <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
           <div className={styles.pageBreadcrumb}>
@@ -132,7 +132,7 @@ function SpacePage() {
               <Link
                 className={styles.pageActionPrimary}
                 to="/spaces/new"
-                search={{ spaceId: space.id }}
+                search={{ spaceId: space.id, parentPageId: "" }}
               >
                 <Plus size={13} />
                 Create page
@@ -216,7 +216,7 @@ function SpacePage() {
                 {renderTree(null, treePages, collapsed, toggleCollapsed)}
               </div>
               {viewer.isEditor && (
-                <Link className={styles.treeAdd} to="/spaces/new" search={{ spaceId: space.id }}>
+                <Link className={styles.treeAdd} to="/spaces/new" search={{ spaceId: space.id, parentPageId: "" }}>
                   <Plus size={13} />
                   Add page
                 </Link>

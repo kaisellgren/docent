@@ -78,7 +78,7 @@ function SpacesIndex() {
                 <Plus size={13} />
                 Create space
               </button>
-              <Link className={styles.pageActionButton} to="/spaces/new" search={{ spaceId: "" }}>
+              <Link className={styles.pageActionButton} to="/spaces/new" search={{ spaceId: "", parentPageId: "" }}>
                 <Plus size={13} />
                 Create page
               </Link>

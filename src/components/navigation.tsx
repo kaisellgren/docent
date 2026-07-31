@@ -7,10 +7,10 @@ export type NavigationViewer = { name: string; email: string; isEditor: boolean 
 
 type TopNavigationProps = {
   viewer: NavigationViewer;
-  centeredLinks?: boolean;
+  createPageContext?: { spaceId?: string; parentPageId?: string };
 };
 
-export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationProps) {
+export function TopNavigation({ viewer, createPageContext }: TopNavigationProps) {
   return (
     <header className={styles.pageViewNav}>
       <div className={`${styles.shell} ${styles.pageViewNavInner}`}>
@@ -18,17 +18,16 @@ export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationPr
           <DocentMark />
           Docent
         </Link>
-        {centeredLinks && (
-          <nav className={styles.pageViewCenterLinks} aria-label="Primary navigation">
-            <Link to="/spaces">Spaces</Link>
-            {viewer?.isEditor && (
-              <Link to="/spaces/new" search={{ spaceId: "" }}>
-                Create page
-              </Link>
-            )}
-            <Link to="/chat" search={{ q: "", conversationId: "" }}>Conversations</Link>
-          </nav>
-        )}
+        <nav className={styles.pageViewCenterLinks} aria-label="Primary navigation">
+          <Link to="/spaces">Spaces</Link>
+          <Link
+            to="/spaces/new"
+            search={{ spaceId: createPageContext?.spaceId ?? "", parentPageId: createPageContext?.parentPageId ?? "" }}
+          >
+            Create page
+          </Link>
+          <Link to="/chat" search={{ q: "", conversationId: "" }}>Conversations</Link>
+        </nav>
         <div className={styles.pageViewNavRight}>
           <Link className={styles.pageIconButton} to="/spaces" aria-label="Search spaces">
             <Search size={16} />

@@ -13,11 +13,12 @@ const getViewer = createServerFn({ method: "GET" }).handler(() => currentSession
 export const Route = createFileRoute("/spaces/new")({
   validateSearch: (search: Record<string, unknown>) => ({
     spaceId: typeof search.spaceId === "string" ? search.spaceId : "",
+    parentPageId: typeof search.parentPageId === "string" ? search.parentPageId : "",
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
     const viewer = await getViewer();
-    if (!viewer) return { viewer, spaces: [], initialPages: [], initialSpaceId: "" };
+    if (!viewer) return { viewer, spaces: [], initialPages: [], initialSpaceId: "", initialParentPageId: "" };
     const spaces = await getSpaces();
     const initialSpaceId = spaces.some((space) => space.id === deps.spaceId)
       ? deps.spaceId
@@ -27,7 +28,8 @@ export const Route = createFileRoute("/spaces/new")({
       spaces,
       initialPages: initialSpaceId
         ? await getSpacePages({ data: { spaceId: initialSpaceId } })
-        : [],
+      : [],
+      initialParentPageId: deps.parentPageId,
       initialSpaceId,
     };
   },
@@ -37,7 +39,7 @@ export const Route = createFileRoute("/spaces/new")({
 type ViewMode = "split" | "write" | "preview";
 
 function CreatePage() {
-  const { viewer, spaces, initialPages, initialSpaceId } = Route.useLoaderData();
+  const { viewer, spaces, initialPages, initialSpaceId, initialParentPageId } = Route.useLoaderData();
   const create = useServerFn(createPage);
   const loadPages = useServerFn(getSpacePages);
   const router = useRouter();
@@ -48,17 +50,17 @@ function CreatePage() {
   const [error, setError] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [spaceId, setSpaceId] = useState(initialSpaceId);
-  const [parentPageId, setParentPageId] = useState("");
+  const [parentPageId, setParentPageId] = useState(initialParentPageId);
   const [parentPages, setParentPages] = useState(initialPages);
   const slug = slugify(title);
 
   useEffect(() => {
     setSpaceId(initialSpaceId);
-    setParentPageId("");
+    setParentPageId(initialParentPageId);
     setParentPages(initialPages);
-  }, [initialPages, initialSpaceId]);
+  }, [initialPages, initialParentPageId, initialSpaceId]);
   useEffect(() => {
-    setParentPageId("");
+    setParentPageId(spaceId === initialSpaceId ? initialParentPageId : "");
     if (!spaceId) {
       setParentPages([]);
       return;
@@ -142,7 +144,7 @@ function CreatePage() {
 
   return (
     <div>
-      <TopNavigation viewer={viewer} />
+      <TopNavigation viewer={viewer} createPageContext={{ spaceId, parentPageId }} />
       <div className={styles.pageActionBar}>
         <div className={`${styles.shell} ${styles.pageActionBarInner}`}>
           <div className={styles.pageBreadcrumb}>

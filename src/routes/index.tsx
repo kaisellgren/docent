@@ -25,7 +25,7 @@ function HomePage() {
   };
   return (
     <div>
-      <TopNavigation viewer={viewer} centeredLinks />
+      <TopNavigation viewer={viewer} />
       <section className={styles.hero}>
         <KnowledgeGraph />
         <div className={styles.heroContent}>
