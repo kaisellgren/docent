@@ -21,7 +21,17 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
     const load = async () => {
       try {
         const result = await (file.mediaType === "application/pdf" ? fetchInline({ data: { fileId: file.id } }) : fetchPreview({ data: { fileId: file.id } }));
-        if (!cancelled) { setError(""); setUrl(result.previewUrl); }
+        // Server functions can resolve with a Response-like value for HTTP
+        // errors. `fetch` does not reject for 404/500 responses, so inspect
+        // the result before treating it as a successful preview URL lookup.
+        const responseLike = result as unknown as { ok?: boolean; status?: number; previewUrl?: string };
+        if (responseLike.ok === false) {
+          throw new Error(`Preview request failed (${responseLike.status ?? "unknown"})`);
+        }
+        if (!responseLike.previewUrl) {
+          throw new Error("Preview URL was not returned");
+        }
+        if (!cancelled) { setError(""); setUrl(responseLike.previewUrl); }
       } catch {
         if (cancelled) return;
         if (attempt >= 14) {
