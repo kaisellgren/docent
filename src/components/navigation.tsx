@@ -26,6 +26,7 @@ export function TopNavigation({ viewer, centeredLinks = false }: TopNavigationPr
                 Create page
               </Link>
             )}
+            <Link to="/chat" search={{ q: "", conversationId: "" }}>Conversations</Link>
           </nav>
         )}
         <div className={styles.pageViewNavRight}>
