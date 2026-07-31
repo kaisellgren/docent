@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { askDocent, getConversationMessages, getConversations } from "@/features/chat/server";
 import { currentSession } from "@/server/auth";
 import { TopNavigation } from "@/components/navigation";
@@ -42,11 +42,19 @@ function ChatPage() {
   const [conversationQuery, setConversationQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const composerInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setQuestion(q);
     setError("");
   }, [q, conversationId]);
+
+  useEffect(() => {
+    const input = composerInputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, [question]);
 
   const activeConversation = conversations.find((conversation) => conversation.id === conversationId);
   const visibleConversations = conversations.filter((conversation) => conversation.title.toLowerCase().includes(conversationQuery.toLowerCase().trim()));
@@ -147,6 +155,7 @@ function ChatPage() {
             <form className={styles.chatComposer} onSubmit={submit}>
               <textarea
                 className={styles.chatComposerInput}
+                ref={composerInputRef}
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 placeholder="Ask about your team’s knowledge…"
