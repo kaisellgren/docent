@@ -371,6 +371,13 @@ globalStyle(`${chatSuggestion}:hover`, { borderColor: 'rgba(31,200,181,.3)', col
 globalStyle(`${chatMessageBody} p`, { margin: '0 0 1rem' });
 globalStyle(`${chatMessageBody} p:last-child`, { marginBottom: '0rem' });
 globalStyle(`${chatComposerButton}:disabled`, { cursor: 'not-allowed', opacity: .45 });
+globalStyle(`${chatComposerButton}, ${chatNewButton}, ${pageViewAvatar}, ${homeSendButton}, ${spacesPrimaryButton}, ${pageIconButton}, ${pageActionButton}, ${detailButton}, ${detailPrimaryButton}`, { transition: 'transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease' });
+globalStyle(`${chatComposerButton}:hover:not(:disabled), ${homeSendButton}:hover, ${spacesPrimaryButton}:hover, ${detailPrimaryButton}:hover`, { background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(31,200,181,.25)', transform: 'translateY(-0.15rem)' });
+globalStyle(`${chatNewButton}:hover, ${pageIconButton}:hover`, { borderColor: 'rgba(31,200,181,.55)', background: 'rgba(31,200,181,.18)', color: '#eaf3f5', boxShadow: '0 0 1.2rem rgba(31,200,181,.2)', transform: 'translateY(-0.1rem)' });
+globalStyle(`${pageViewAvatar}:hover`, { boxShadow: '0 0 1.6rem rgba(62,123,250,.45)', transform: 'scale(1.06)' });
+globalStyle(`${pageActionButton}:hover`, { borderColor: 'rgba(31,200,181,.45)', background: 'rgba(31,200,181,.12)', color: '#eaf3f5' });
+globalStyle(`${pageActionPrimary}:hover`, { background: 'linear-gradient(135deg, #6fa0ff, #1fc8b5)', boxShadow: '0 0.8rem 1.8rem rgba(62,123,250,.25)', color: '#04120f', transform: 'translateY(-0.15rem)' });
+globalStyle(`${detailButton}:hover`, { borderColor: 'rgba(31,200,181,.45)', background: 'rgba(31,200,181,.12)', color: '#eaf3f5', transform: 'translateY(-0.1rem)' });
 globalStyle(`${chatReferenceLink}:hover, ${chatMessageReferenceLink}:hover, ${chatInlineCitation}:hover`, { color: '#6fa0ff' });
 globalStyle(`${editorTitleInput}::placeholder, ${editorTextarea}::placeholder`, { color: '#64828c', opacity: 1 });
 globalStyle(`${formatButton}:hover`, { borderColor: 'rgba(255,255,255,.09)', background: 'rgba(20,48,68,.53)', color: '#eaf3f5' });
