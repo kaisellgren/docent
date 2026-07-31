@@ -16,7 +16,10 @@ export function FilePreviewModal({ file, onClose }: { file: { id: string; filena
     setUrl(""); setError("");
     const load = async () => {
       try {
-        const result = await fetchPreview({ data: { fileId: file.id } });
+        const result = await Promise.race([
+          fetchPreview({ data: { fileId: file.id } }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Preview request timed out.")), 4000)),
+        ]);
         if (!cancelled) { setError(""); setUrl(result.previewUrl); }
       } catch {
         if (cancelled) return;

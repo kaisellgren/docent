@@ -21,14 +21,42 @@ function previewDocument(title: string, body: string) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{margin:0;padding:2rem 2.5rem;background:#fff;color:#20252b;font:16px/1.65 Inter,system-ui,sans-serif}main{max-width:56rem;margin:0 auto}h1{font-size:1.6rem;line-height:1.25;border-bottom:1px solid #d9e0e7;padding-bottom:1rem;margin:0 0 2rem}p{margin:0 0 1rem;white-space:pre-wrap}ul,ol{padding-left:1.5rem}img{max-width:100%}</style></head><body><main><h1>${escapeHtml(title)}</h1>${safeBody}</main></body></html>`;
 }
 
+function odtInlineHtml(value: string, emphasis: Set<string>): string {
+  const withSpans: string = value.replace(/<text:span\b([^>]*)>([\s\S]*?)<\/text:span>/gi, (_match, attributes: string, content: string) => {
+    const style = /text:style-name=["']([^"']+)["']/i.exec(attributes)?.[1] ?? '';
+    const inner: string = odtInlineHtml(content, emphasis);
+    if (emphasis.has(style)) return `<strong>${inner}</strong>`;
+    if (/italic|oblique/i.test(style)) return `<em>${inner}</em>`;
+    return inner;
+  }).replace(/<text:tab\s*\/?>(?!$)/gi, '    ').replace(/<text:s(?:\s+text:c="(\d+)")?\s*\/>/gi, (_match, count?: string) => ' '.repeat(Number(count ?? 1)));
+  return escapeHtml(withSpans.replace(/<[^>]+>/g, '')).replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;');
+}
+
+function odtHtml(xml: string, stylesXml: string | undefined) {
+  const emphasis = new Set<string>();
+  for (const match of stylesXml?.matchAll(/<style:style\b[^>]*style:name=["']([^"']+)["'][\s\S]*?<style:text-properties\b[^>]*(?:fo:font-weight|style:font-weight-asian)=["']bold["']/gi) ?? []) emphasis.add(match[1] ?? '');
+  const blocks: string[] = [];
+  for (const match of xml.matchAll(/<text:(h|p)\b([^>]*)>([\s\S]*?)<\/text:\1>/gi)) {
+    const kind = match[1] === 'h' ? `h${Math.min(6, Number(/text:outline-level=["'](\d+)["']/i.exec(match[2] ?? '')?.[1] ?? 2))}` : 'p';
+    blocks.push(`<${kind}>${odtInlineHtml(match[3] ?? '', emphasis)}</${kind}>`);
+  }
+  const lists = [...xml.matchAll(/<text:list\b[^>]*>([\s\S]*?)<\/text:list>/gi)];
+  for (const list of lists) {
+    const items = [...(list[1] ?? '').matchAll(/<text:list-item\b[^>]*>([\s\S]*?)<\/text:list-item>/gi)].map((item) => `<li>${odtInlineHtml(item[1] ?? '', emphasis)}</li>`).join('');
+    blocks.push(`<ul>${items}</ul>`);
+  }
+  return blocks.join('');
+}
+
 async function renderFile(file: z.infer<typeof fileSchema>) {
   const projectId = env().GOOGLE_CLOUD_PROJECT; const storage = projectId ? new Storage({ projectId }) : new Storage(); const bucket = storage.bucket(env().GCS_BUCKET!); const [bytes] = await bucket.file(file.objectKey).download();
   if (file.mediaType === 'application/pdf') { const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise; const pages = await Promise.all(Array.from({ length: document.numPages }, async (_, index) => (await (await document.getPage(index + 1)).getTextContent()).items.map((item) => ('str' in item ? item.str : '')).join(' '))); const text = pages.join('\n\n'); return { text, html: previewDocument(file.filename, pages.map((page) => `<p>${escapeHtml(page)}</p>`).join('')) }; }
   if (file.mediaType.includes('wordprocessingml')) { const raw = await mammoth.extractRawText({ buffer: bytes }); const rendered = await mammoth.convertToHtml({ buffer: bytes }); return { text: raw.value, html: previewDocument(file.filename, rendered.value) }; }
   const archive = await JSZip.loadAsync(bytes); const xml = await archive.file('content.xml')?.async('string'); if (!xml) throw new Error('ODT content.xml is missing');
+  const stylesXml = await archive.file('styles.xml')?.async('string');
   const paragraphs = [...xml.matchAll(/<text:p[^>]*>([\s\S]*?)<\/text:p>/gi)].map((match) => (match[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim()).filter(Boolean);
   const text = paragraphs.join('\n\n');
-  return { text, html: previewDocument(file.filename, paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')) };
+  return { text, html: previewDocument(file.filename, odtHtml(xml, stylesXml)) };
 }
 
 export async function processIngestionJob(jobId: string) {
