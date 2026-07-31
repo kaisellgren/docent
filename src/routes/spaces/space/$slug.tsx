@@ -358,7 +358,7 @@ function FilesTab({
   const [parentId, setParentId] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
-  const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files;
+  const visibleFiles = selectedFolderId ? files.filter((file) => file.folderId === selectedFolderId) : files.filter((file) => !file.folderId);
   const listingFolders = selectedFolderId
     ? folders.filter((folder) => {
       let current = folder.parentId;
@@ -506,7 +506,7 @@ function FilesTab({
           <button type="button" className={selectedFolderId === null ? styles.fileFolderRowSelected : styles.fileFolderButton} onClick={() => setSelectedFolderId(null)}>
             <Folder size={15} />
             <span>All files</span>
-            <small>{files.length}</small>
+            <small>{files.filter((file) => !file.folderId).length}</small>
           </button>
           {renderFolders(null)}
         </aside>
