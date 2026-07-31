@@ -93,8 +93,9 @@ function ChatPage() {
     setOptimisticMessage({ id: `optimistic-${Date.now()}`, role: "user", content: message, createdAt: new Date().toISOString(), citations: [] });
     try {
       const result = await ask({ data: { message, conversationId: conversationId || undefined } });
-      setOptimisticMessage(null);
       await router.navigate({ to: "/chat", search: { q: "", conversationId: result.conversationId } });
+      await router.invalidate();
+      setOptimisticMessage(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Docent could not answer right now.");
     } finally {
