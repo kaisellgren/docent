@@ -115,7 +115,7 @@ export const updateSpace = createServerFn({ method: 'POST' })
     return (await db()).one(sql.type(spaceSchema)`
       UPDATE wiki_space
       SET name = ${data.name}, description = ${data.description}, icon = ${data.icon}, updated_at = now()
-      WHERE id = ${data.spaceId} AND deleted_at IS NULL
+      WHERE id = ${data.spaceId}
       RETURNING id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt", false AS "isFavorite"
     `);
   });
