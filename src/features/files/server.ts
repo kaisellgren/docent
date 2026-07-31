@@ -354,6 +354,8 @@ export const getPreviewUrl = createServerFn({ method: 'GET' })
       WHERE id = ${data.fileId} AND deleted_at IS NULL AND preview_object_key IS NOT NULL AND preview_status = 'ready'
     `);
     if (!file) throw new Response('A preview is not available for this file yet.', { status: 404 });
+    const [exists] = await bucket().file(file.previewObjectKey).exists();
+    if (!exists) throw new Response('The preview has not been generated yet. Retry file indexing and try again.', { status: 404 });
     const [previewUrl] = await bucket().file(file.previewObjectKey).getSignedUrl({ version: 'v4', action: 'read', expires: Date.now() + 10 * 60 * 1000, responseDisposition: 'inline', responseType: 'text/html' });
     return { previewUrl };
   });
