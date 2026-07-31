@@ -13,7 +13,7 @@ const slugSchema = z.object({ slug: z.string().min(1).max(240) });
 const pageMutationSchema = pageInputSchema.extend({ slug: z.string().min(1).max(240) });
 const restoreRevisionSchema = slugSchema.extend({ revisionId: z.string().uuid() });
 const createPageSchema = pageInputSchema.extend({ spaceId: z.string().uuid(), parentPageId: z.string().uuid().nullable() });
-const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), pageCount: z.number().int(), updatedAt: z.string() });
+const spaceSchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string(), description: z.string(), icon: z.enum(['book-open', 'code-2', 'compass', 'database', 'megaphone', 'palette', 'shield-check', 'users']), pageCount: z.number().int(), updatedAt: z.string(), isFavorite: z.boolean() });
 const spacePageSchema = z.object({ id: z.string().uuid(), slug: z.string(), title: z.string(), parentPageId: z.string().uuid().nullable(), updatedAt: z.string(), author: z.string(), ingestionStatus: ingestionStatusSchema.nullable(), ingestionError: z.string().nullable() });
 
 function slugify(title: string): string {
@@ -34,26 +34,50 @@ export const getRecentPages = createServerFn({ method: 'GET' }).handler(async ()
 });
 
 export const getSpaces = createServerFn({ method: 'GET' }).handler(async () => {
-  await requireSession();
+  const user = await requireSession();
   return (await db()).any(sql.type(spaceSchema)`
     SELECT s.id, s.slug, s.name, s.description, s.icon, COUNT(p.id)::integer AS "pageCount",
-      GREATEST(s.updated_at, COALESCE(MAX(p.updated_at), s.updated_at))::text AS "updatedAt"
+      GREATEST(s.updated_at, COALESCE(MAX(p.updated_at), s.updated_at))::text AS "updatedAt",
+      (f.user_id IS NOT NULL) AS "isFavorite"
     FROM wiki_space s
     LEFT JOIN wiki_page p ON p.space_id = s.id AND p.deleted_at IS NULL
+    LEFT JOIN wiki_space_favorite f ON f.space_id = s.id AND f.user_id = ${user.userId}
     WHERE s.archived_at IS NULL
-    GROUP BY s.id
-    ORDER BY "updatedAt" DESC
+    GROUP BY s.id, f.user_id
+    ORDER BY "isFavorite" DESC, "updatedAt" DESC
   `);
 });
 
 export const getSpace = createServerFn({ method: 'GET' })
   .validator((data: unknown) => z.object({ slug: z.string().min(1).max(240) }).parse(data))
   .handler(async ({ data }) => {
-    await requireSession();
+    const user = await requireSession();
     return (await db()).maybeOne(sql.type(spaceSchema)`
-      SELECT id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
-      FROM wiki_space WHERE slug = ${data.slug} AND archived_at IS NULL
-    `);
+      SELECT s.id, s.slug, s.name, s.description, s.icon, 0::integer AS "pageCount", s.updated_at::text AS "updatedAt",
+        (f.user_id IS NOT NULL) AS "isFavorite"
+      FROM wiki_space s
+      LEFT JOIN wiki_space_favorite f ON f.space_id = s.id AND f.user_id = ${user.userId}
+      WHERE s.slug = ${data.slug} AND s.archived_at IS NULL
+  `);
+});
+
+export const toggleSpaceFavorite = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => z.object({ spaceId: z.string().uuid(), favorite: z.boolean() }).parse(data))
+  .handler(async ({ data }) => {
+    const user = await requireSession();
+    const pool = await db();
+    if (data.favorite) {
+      await pool.query(sql.unsafe`
+        INSERT INTO wiki_space_favorite (user_id, space_id)
+        SELECT ${user.userId}, id FROM wiki_space WHERE id = ${data.spaceId} AND archived_at IS NULL
+        ON CONFLICT (user_id, space_id) DO NOTHING
+      `);
+    } else {
+      await pool.query(sql.unsafe`
+        DELETE FROM wiki_space_favorite WHERE user_id = ${user.userId} AND space_id = ${data.spaceId}
+      `);
+    }
+    return { isFavorite: data.favorite };
   });
 
 export const getSpacePages = createServerFn({ method: 'GET' })
@@ -80,7 +104,7 @@ export const createSpace = createServerFn({ method: 'POST' })
     return (await db()).one(sql.type(spaceSchema)`
       INSERT INTO wiki_space (slug, name, description, icon, created_by)
       VALUES (${slug}, ${data.name}, ${data.description}, ${data.icon}, ${user.userId})
-      RETURNING id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt"
+      RETURNING id, slug, name, description, icon, 0::integer AS "pageCount", updated_at::text AS "updatedAt", false AS "isFavorite"
     `);
   });
 

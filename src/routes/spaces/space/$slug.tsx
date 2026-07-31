@@ -24,7 +24,7 @@ import {
   getSpaceFolders,
   retryFileIngestion,
 } from "@/features/files/server";
-import { getSpace, getSpacePages } from "@/features/wiki/server";
+import { getSpace, getSpacePages, toggleSpaceFavorite } from "@/features/wiki/server";
 import { TopNavigation } from "@/components/navigation";
 import { SpaceIcon } from "@/components/space-icon";
 import { IngestionStatus } from "@/components/ingestion-status";
@@ -56,11 +56,12 @@ export const Route = createFileRoute("/spaces/space/$slug")({
 
 function SpacePage() {
   const { viewer, space, pages, files, folders } = Route.useLoaderData();
+  const toggleFavorite = useServerFn(toggleSpaceFavorite);
   const { tab } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"tree" | "updated" | "name">("tree");
   const [flatList, setFlatList] = useState(false);
-  const [starred, setStarred] = useState(false);
+  const [starred, setStarred] = useState(space?.isFavorite ?? false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   if (!viewer || !space)
@@ -100,6 +101,16 @@ function SpacePage() {
       return next;
     });
   }
+  async function setFavorite() {
+    if (!space) return;
+    const next = !starred;
+    setStarred(next);
+    try {
+      await toggleFavorite({ data: { spaceId: space.id, favorite: next } });
+    } catch {
+      setStarred(!next);
+    }
+  }
   const tabLink = (nextTab: "pages" | "files") => ({
     to: "/spaces/space/$slug" as const,
     params: { slug: space.slug },
@@ -124,7 +135,7 @@ function SpacePage() {
               className={styles.pageIconButton}
               aria-label={starred ? "Unstar space" : "Star space"}
               aria-pressed={starred}
-              onClick={() => setStarred((value) => !value)}
+              onClick={() => { void setFavorite(); }}
             >
               <Star size={15} fill={starred ? "currentColor" : "none"} />
             </button>

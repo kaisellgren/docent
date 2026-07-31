@@ -166,6 +166,7 @@ export const spaceCard = style({ display: 'flex', flexDirection: 'column', paddi
 export const spaceCardTop = style({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.4rem' });
 export const spaceIcon = style({ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.8rem', height: '3.8rem', borderRadius: '1rem', background: 'rgba(31,200,181,.1)', color: '#1fc8b5', fontSize: '1.7rem' });
 export const spaceKey = style({ padding: '0.3rem 0.7rem', border: '0.1rem solid rgba(255,255,255,.09)', borderRadius: '0.6rem', color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.05rem' });
+export const spaceFavorite = style({ marginLeft: 'auto', color: '#1fc8b5', filter: 'drop-shadow(0 0 0.5rem rgba(31,200,181,.4))' });
 export const spaceCardFoot = style({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.2rem', marginTop: 'auto', paddingTop: '1.4rem', borderTop: '0.1rem solid rgba(255,255,255,.09)', color: '#64828c', fontFamily: '"IBM Plex Mono", monospace', fontSize: '1.15rem' });
 export const emptySpaces = style({ padding: '4.4rem 0', color: '#9ab1ba' });
 export const pageTree = style({ display: 'flex', flexDirection: 'column', gap: '0.4rem' });

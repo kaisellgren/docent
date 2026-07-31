@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
-import { Grid2X2, List, Plus, Search } from "lucide-react";
+import { Grid2X2, List, Plus, Search, Star } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { TopNavigation } from "@/components/navigation";
 import { SPACE_ICON_OPTIONS, SpaceIcon, type SpaceIconName } from "@/components/space-icon";
@@ -210,6 +210,7 @@ function SpacesIndex() {
                       <span className={styles.spaceKey}>
                         {space.slug.slice(0, 3).toUpperCase()}
                       </span>
+                      {space.isFavorite && <Star className={styles.spaceFavorite} size={15} fill="currentColor" aria-label="Favorite space" />}
                     </div>
                     <h2>{space.name}</h2>
                     <p>{space.description}</p>
