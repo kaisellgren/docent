@@ -66,9 +66,9 @@ function ChatPage() {
     if (!message || loading) return;
     setLoading(true);
     setError("");
+    setQuestion("");
     try {
       const result = await ask({ data: { message, conversationId: conversationId || undefined } });
-      setQuestion("");
       await router.navigate({ to: "/chat", search: { q: "", conversationId: result.conversationId } });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Docent could not answer right now.");
