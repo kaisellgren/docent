@@ -10,7 +10,7 @@ import { env } from '@/server/env';
 import { enqueueIngestionJob } from '@/features/ingestion/queue';
 
 const mediaTypeSchema = z.enum(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text']);
-const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional() });
+const uploadIntentSchema = uploadMetadataSchema.extend({ filename: z.string().min(1).max(255), mediaType: mediaTypeSchema, sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES), spaceId: z.string().uuid().nullable().optional(), pageId: z.string().uuid().nullable().optional() });
 const fileIdSchema = z.object({ fileId: z.string().uuid() });
 const fileRowSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), status: z.enum(['pending', 'processing', 'ready', 'failed']), error: z.string().nullable(), createdAt: z.string(), folderId: z.string().uuid().nullable(), folderName: z.string().nullable(), spaceId: z.string().uuid().nullable(), tags: z.array(z.string()) });
 const pageAttachmentSchema = z.object({ id: z.string().uuid(), filename: z.string(), mediaType: mediaTypeSchema, sizeBytes: z.number().int(), tags: z.array(z.string()), attachedAt: z.string() });
@@ -106,6 +106,12 @@ export const createUploadIntent = createServerFn({ method: 'POST' })
     const fileId = randomUUID();
     const objectKey = `uploads/${fileId}.${extension}`;
     await (await db()).transaction(async (transaction) => {
+      if (data.pageId) {
+        const page = await transaction.maybeOne(sql.type(z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }))`
+          SELECT id, space_id AS "spaceId" FROM wiki_page WHERE id = ${data.pageId} AND deleted_at IS NULL
+        `);
+        if (!page || !data.spaceId || page.spaceId !== data.spaceId) throw new Response('The upload page does not belong to this space.', { status: 400 });
+      }
       await transaction.query(sql.unsafe`
         INSERT INTO stored_file (id, folder_id, space_id, original_filename, media_type, size_bytes, object_key, uploaded_by)
         VALUES (${fileId}, ${data.folderId ?? null}, ${data.spaceId ?? null}, ${data.filename}, ${data.mediaType}, ${data.sizeBytes}, ${objectKey}, ${user.userId})
@@ -116,6 +122,11 @@ export const createUploadIntent = createServerFn({ method: 'POST' })
           ON CONFLICT (normalized_name) DO UPDATE SET name = EXCLUDED.name RETURNING id
         `);
         await transaction.query(sql.unsafe`INSERT INTO file_tag (file_id, tag_id) VALUES (${fileId}, ${tagRow.id}) ON CONFLICT DO NOTHING`);
+      }
+      if (data.pageId) {
+        await transaction.query(sql.unsafe`
+          INSERT INTO page_file (page_id, file_id, attached_by) VALUES (${data.pageId}, ${fileId}, ${user.userId})
+        `);
       }
     });
     const [uploadUrl] = await bucket().file(objectKey).getSignedUrl({ version: 'v4', action: 'write', expires: Date.now() + 15 * 60 * 1000, contentType: data.mediaType });

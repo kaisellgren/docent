@@ -1,10 +1,10 @@
-import { MoreHorizontal, Pencil, Share2, Sparkles, Star } from 'lucide-react';
+import { MoreHorizontal, Pencil, Share2, Sparkles, Star, Upload } from 'lucide-react';
 import { Link, createFileRoute, notFound, redirect, useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import ReactMarkdown from 'react-markdown';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { deletePage, getPage, getPageRevisions, getSpacePages, restorePageRevision, retryPageIngestion, updatePage } from '@/features/wiki/server';
-import { attachFileToPage, detachFileFromPage, getPageAttachments, getSpaceFiles } from '@/features/files/server';
+import { attachFileToPage, confirmUpload, createUploadIntent, detachFileFromPage, getPageAttachments, getSpaceFiles } from '@/features/files/server';
 import { currentSession } from '@/server/auth';
 import { createServerFn } from '@tanstack/react-start';
 import { TopNavigation } from '@/components/navigation';
@@ -40,6 +40,8 @@ function PageView() {
   const retryIngestion = useServerFn(retryPageIngestion);
   const attach = useServerFn(attachFileToPage);
   const detach = useServerFn(detachFileFromPage);
+  const uploadIntent = useServerFn(createUploadIntent);
+  const confirm = useServerFn(confirmUpload);
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [starred, setStarred] = useState(false);
@@ -69,6 +71,23 @@ function PageView() {
   }
   async function detachFile(fileId: string) {
     await run('detach this file', async () => { await detach({ data: { pageId: page.id, fileId } }); setNotice('File detached from this page.'); await router.invalidate(); });
+  }
+  async function uploadAttachment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const selected = form.get('file');
+    if (!(selected instanceof File)) return;
+    const mediaType = selected.type || mediaTypeForFilename(selected.name);
+    if (!mediaType) { setError('Choose a PDF, DOCX, or ODT file.'); return; }
+    await run('upload this file', async () => {
+      const intent = await uploadIntent({ data: { filename: selected.name, mediaType, sizeBytes: selected.size, folderId: null, tagNames: [], spaceId: page.spaceId, pageId: page.id } });
+      const response = await fetch(intent.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mediaType }, body: selected });
+      if (!response.ok) throw new Error('The file could not be uploaded to storage.');
+      await confirm({ data: { fileId: intent.fileId } });
+      setNotice('File attached and queued for indexing.');
+      event.currentTarget.reset();
+      await router.invalidate();
+    });
   }
   async function erase() {
     if (!window.confirm(`Soft-delete “${page.title}”?`)) return;
@@ -104,6 +123,7 @@ function PageView() {
     <main className={`${styles.shell} ${styles.pageViewBody}`}>
       <PageTree pages={spacePages} currentId={page.id} spaceSlug={page.spaceSlug} spaceIcon={page.spaceIcon} />
       <article className={styles.pageArticle}>
+        {viewer.isEditor && <form className={styles.fileUploadForm} onSubmit={uploadAttachment}><label className={styles.detailButton}><Upload size={14} />Attach file<input name="file" type="file" accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text" required /></label><button className={styles.detailPrimaryButton}>Upload</button></form>}
         <div className={styles.pageArticleHead}><div className={styles.pageSpacePill}><SpaceIcon name={page.spaceIcon} size={14} /> {page.spaceName}{parentPath ? ` / ${parentPath}` : ''}</div><h1 className={styles.pageTitleView}>{page.title}</h1><div className={styles.pageArticleMeta}><span className={styles.pageAuthorMeta}><span className={styles.miniAvatar}>{initials(page.author)}</span>{page.author}</span><span>·</span><span>updated {relativeTime(page.updatedAt)}</span><span>·</span><span>{readMinutes} min read</span><span>·</span><span>{revisions.length} {revisions.length === 1 ? 'revision' : 'revisions'}</span><IngestionStatus status={page.ingestionStatus} error={page.ingestionError} onRetry={viewer.isEditor && page.ingestionStatus === 'failed' ? () => { void retryIndexing(); } : undefined} /></div></div>
         {editing ? <form className={styles.pageEditForm} onSubmit={save}><input className={styles.pageEditTitle} value={title} onChange={(event) => setTitle(event.target.value)} disabled={Boolean(pendingAction)} required /><textarea className={styles.pageEditTextarea} value={markdown} onChange={(event) => setMarkdown(event.target.value)} disabled={Boolean(pendingAction)} required /><div className={styles.actions}><button className={styles.pageActionPrimary} disabled={Boolean(pendingAction)}>{isPending('save this revision') ? 'Saving…' : 'Save revision'}</button><button type="button" className={styles.pageActionButton} disabled={Boolean(pendingAction)} onClick={() => { setEditing(false); setTitle(page.title); setMarkdown(page.markdown); }}>Cancel</button></div></form> : <div className={styles.pageProse}><ReactMarkdown components={{ h2: ({ children }) => <h2 id={headingId(children)}>{children}</h2>, h3: ({ children }) => <h3 id={headingId(children)}>{children}</h3> }}>{page.markdown}</ReactMarkdown></div>}
         {notice && <p className={styles.feedbackSuccess} role="status">{notice}</p>}{error && <p className={styles.feedbackError} role="alert">{error}</p>}
@@ -133,3 +153,10 @@ function getParentPath(page: { parentPageId: string | null }, pages: SpacePages)
 function relativeTime(value: string): string { const minutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60_000)); if (minutes < 60) return `${minutes}m ago`; const hours = Math.round(minutes / 60); if (hours < 24) return `${hours}h ago`; const days = Math.round(hours / 24); return `${days}d ago`; }
 function initials(name: string): string { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase(); }
 function messageFor(cause: unknown, action: string) { const detail = cause instanceof Error ? cause.message : ''; return detail ? `Unable to ${action}: ${detail}` : `Unable to ${action}. Please try again.`; }
+function mediaTypeForFilename(filename: string): 'application/pdf' | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' | 'application/vnd.oasis.opendocument.text' | undefined {
+  const extension = filename.toLowerCase().split('.').pop();
+  if (extension === 'pdf') return 'application/pdf';
+  if (extension === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (extension === 'odt') return 'application/vnd.oasis.opendocument.text';
+  return undefined;
+}

@@ -371,6 +371,8 @@ function FilesTab({
     const form = new FormData(event.currentTarget);
     const selected = form.get("file");
     if (!(selected instanceof File)) return;
+    const mediaType = selected.type || mediaTypeForFilename(selected.name);
+    if (!mediaType) return;
     const tags = String(form.get("tags") ?? "")
       .split(",")
       .map((tag) => tag.trim())
@@ -378,7 +380,7 @@ function FilesTab({
     const intent = await uploadIntent({
       data: {
         filename: selected.name,
-        mediaType: selected.type as "application/pdf",
+        mediaType,
         sizeBytes: selected.size,
         folderId: String(form.get("folderId") || "") || null,
         tagNames: tags,
@@ -670,4 +672,11 @@ function initials(name: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+function mediaTypeForFilename(filename: string): 'application/pdf' | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' | 'application/vnd.oasis.opendocument.text' | undefined {
+  const extension = filename.toLowerCase().split('.').pop();
+  if (extension === 'pdf') return 'application/pdf';
+  if (extension === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (extension === 'odt') return 'application/vnd.oasis.opendocument.text';
+  return undefined;
 }
