@@ -550,7 +550,7 @@ function FilesTab({
               <div className={styles.fileListingFolders}>
                 {listingFolders.map((folder) => (
                   <div className={styles.fileListingFolderRow} key={folder.id}>
-                    <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => setSelectedFolderId(folder.id)}><Folder size={15} /><span>{folderPath(folder)}</span></button>
+                    <button type="button" className={selectedFolderId === folder.id ? styles.fileListingFolderButtonSelected : styles.fileListingFolderButton} onClick={() => setSelectedFolderId(folder.id)}><Folder size={15} /><span>{folder.name}</span></button>
                     {viewerIsEditor && <button type="button" className={styles.fileListingFolderDelete} aria-label={`Delete folder ${folder.name}`} onClick={() => { void removeFolderAndRefresh(folder); }}><Trash2 size={14} /></button>}
                   </div>
                 ))}
