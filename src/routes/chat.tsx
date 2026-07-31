@@ -44,6 +44,7 @@ function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setQuestion(q);
@@ -56,6 +57,14 @@ function ChatPage() {
     input.style.height = "auto";
     input.style.height = `${input.scrollHeight}px`;
   }, [question]);
+
+  useEffect(() => {
+    const messagesElement = messagesRef.current;
+    if (!messagesElement) return;
+    requestAnimationFrame(() => {
+      messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: "smooth" });
+    });
+  }, [messages, loading]);
 
   const activeConversation = conversations.find((conversation) => conversation.id === conversationId);
   const visibleConversations = conversations.filter((conversation) => conversation.title.toLowerCase().includes(conversationQuery.toLowerCase().trim()));
@@ -152,7 +161,7 @@ function ChatPage() {
               </div>
               <span className={styles.chatStatus}><span className={styles.chatStatusDot} /> Ready</span>
             </header>
-            <div className={styles.chatMessages}>
+            <div className={styles.chatMessages} ref={messagesRef}>
               {messages.length === 0 && !loading ? (
                 <div className={styles.chatIntro}>
                   <div className={styles.chatIntroIcon}><Sparkles size={20} /></div>
