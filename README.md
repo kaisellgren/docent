@@ -60,7 +60,7 @@ The generation layer is configured through Mastra and Google Vertex AI. The mode
 ## Technology
 
 | Area           | Technology                             |
-| -------------- |----------------------------------------|
+| -------------- | -------------------------------------- |
 | Language       | TypeScript (backend + frontend)        |
 | Frontend       | React, TanStack Router, TanStack Start |
 | AI generation  | Mastra + Google Vertex AI              |
