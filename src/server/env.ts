@@ -16,7 +16,7 @@ const envSchema = z.object({
   GOOGLE_CLOUD_LOCATION: z.string().default('europe-north1'),
   VERTEX_AI_LOCATION: z.string().default('global'),
   VERTEX_CHAT_MODEL: z.string().default('gemini-3.5-flash-lite'),
-  VERTEX_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
+  VERTEX_EMBEDDING_MODEL: z.string().default('gemini-embedding-2'),
   GCS_BUCKET: optionalString,
   CLOUD_TASKS_QUEUE: optionalString,
   CLOUD_TASKS_LOCATION: z.string().default('europe-west1'),

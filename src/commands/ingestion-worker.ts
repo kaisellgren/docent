@@ -10,6 +10,7 @@ try {
   do {
     const result = await processPendingIngestionJobs(limit, !watch)
     console.log(`Ingestion worker: ${result.processed}/${result.discovered} jobs processed; ${result.failed} failed.`)
+    for (const failure of result.failures) console.error(`Ingestion job ${failure.jobId} failed: ${failure.message}`)
     if (result.failed && !watch) process.exitCode = 1
     if (watch) await new Promise((resolve) => setTimeout(resolve, 2000))
   } while (watch)

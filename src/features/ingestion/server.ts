@@ -9,6 +9,10 @@ import { embedText } from '@/features/ai/vertex'
 import { chunkText } from '@/features/ingestion/chunk'
 import { generateFilePreview } from '@/features/ingestion/preview'
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 const jobSchema = z.object({
   id: z.string().uuid(),
   contentKind: z.enum(['page', 'file']),
@@ -130,7 +134,8 @@ export async function processIngestionJob(jobId: string) {
           sql.unsafe`UPDATE stored_file SET preview_object_key = ${previewObjectKey}, preview_status = 'ready', preview_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
         )
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown preview conversion error'
+        const message = errorMessage(error)
+        console.warn('[ingestion] preview conversion failed', { fileId: job.fileId, message })
         await pool.query(
           sql.unsafe`UPDATE stored_file SET preview_status = 'failed', preview_error = ${message}, updated_at = now() WHERE id = ${job.fileId}`,
         )
@@ -141,7 +146,14 @@ export async function processIngestionJob(jobId: string) {
     )
     return { processed: true }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown ingestion error'
+    const message = errorMessage(error)
+    console.error('[ingestion] job failed', {
+      jobId: job.id,
+      contentKind: job.contentKind,
+      pageRevisionId: job.pageRevisionId,
+      fileId: job.fileId,
+      message,
+    })
     await pool.query(
       sql.unsafe`UPDATE ingestion_job SET status = 'failed', error_message = ${message}, completed_at = now() WHERE id = ${job.id}`,
     )
@@ -162,12 +174,14 @@ export async function processPendingIngestionJobs(limit = 10, includeFailed = tr
   `)
   let processed = 0
   let failed = 0
+  const failures: Array<{ jobId: string; message: string }> = []
   for (const job of jobs) {
     try {
       if ((await processIngestionJob(job.id)).processed) processed += 1
-    } catch {
+    } catch (error) {
       failed += 1
+      failures.push({ jobId: job.id, message: errorMessage(error) })
     }
   }
-  return { discovered: jobs.length, processed, failed }
+  return { discovered: jobs.length, processed, failed, failures }
 }
