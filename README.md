@@ -4,6 +4,8 @@ Docent is an AI-powered knowledge workspace for teams that want their internal p
 
 It combines a calm wiki experience with reliable document ingestion and grounded AI answers. People can organize knowledge into spaces, upload PDF/DOCX/ODT files, and ask questions that are answered with citations back to the source material.
 
+![Docent AI workflow](public/docent-ai-flow.png)
+
 ## Why it stands out
 
 - **Answers grounded in your knowledge.** Docent retrieves relevant passages from indexed pages and files before asking the AI to answer. This keeps answers connected to the organization’s actual content instead of relying on unsupported guesses.
@@ -19,22 +21,22 @@ It combines a calm wiki experience with reliable document ingestion and grounded
 Page edit or file upload
           |
           v
-  Ingestion job is queued
+Ingestion job is queued
           |
           v
-  Text extraction + chunking
+Text extraction + chunking
           |
           v
- Gemini Embedding 2 vectors
+Gemini Embedding 2 vectors
           |
           v
- PostgreSQL + pgvector
+PostgreSQL + pgvector
           |
           v
- User question -> query embedding -> nearest passages
+User question -> query embedding -> nearest passages
           |
           v
- Grounded response with source citations
+Grounded response with source citations
 ```
 
 Docent uses **Gemini Embedding 2** through Vertex AI for retrieval embeddings. Document and query inputs use task-aware instructions, and vectors are stored at 768 dimensions to keep the PostgreSQL schema compact and efficient. The same retrieval path powers both file/page search and chat references.
@@ -56,10 +58,9 @@ The generation layer is configured through Mastra and Google Vertex AI. The mode
 ## Technology
 
 | Area           | Technology                             |
-| -------------- | -------------------------------------- |
+| -------------- |----------------------------------------|
+| Language       | TypeScript (backend + frontend)        |
 | Frontend       | React, TanStack Router, TanStack Start |
-| Styling        | Vanilla Extract                        |
-| Language       | TypeScript with strict checking        |
 | AI generation  | Mastra + Google Vertex AI              |
 | Embeddings     | Gemini Embedding 2 via Vertex AI       |
 | Database       | PostgreSQL with pgvector               |
@@ -67,6 +68,7 @@ The generation layer is configured through Mastra and Google Vertex AI. The mode
 | Async work     | Google Cloud Tasks + ingestion worker  |
 | Infrastructure | CDKTF and Google Cloud                 |
 | Quality        | Vitest, Playwright, Oxlint, Oxfmt      |
+| Styling        | Vanilla Extract                        |
 
 ## Local development
 
