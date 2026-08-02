@@ -1,10 +1,16 @@
 import { GoogleAuth } from 'google-auth-library'
 import { env } from '@/server/env'
-import { geminiEmbeddingInput } from '@/features/ai/embedding-input'
+import { geminiEmbeddingInput, vertexEmbeddingServiceEndpoint } from '@/features/ai/embedding-input'
 
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] })
 const EMBEDDING_DIMENSION = 768
 const GEMINI_EMBEDDING_2 = 'gemini-embedding-2'
+
+function networkErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) return String(error)
+  const cause = error.cause instanceof Error ? `; cause: ${error.cause.message}` : ''
+  return `${error.name}: ${error.message}${cause}`
+}
 
 async function vertexFetch(path: string, body: unknown, serviceEndpoint?: string) {
   const project = env().GOOGLE_CLOUD_PROJECT
@@ -15,11 +21,16 @@ async function vertexFetch(path: string, body: unknown, serviceEndpoint?: string
   const host =
     serviceEndpoint ?? (location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`)
   const endpoint = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${path}`
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let response: Response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw new Error(`Vertex AI network request failed at ${endpoint}: ${networkErrorMessage(error)}`, { cause: error })
+  }
   if (!response.ok) {
     const detail = (await response.text()).trim().slice(0, 2000)
     throw new Error(
@@ -41,7 +52,7 @@ export async function embedText(
           content: { parts: [{ text: geminiEmbeddingInput(text, taskType) }] },
           embedContentConfig: { outputDimensionality: EMBEDDING_DIMENSION },
         },
-        `aiplatform.${env().VERTEX_AI_LOCATION}.rep.googleapis.com`,
+        vertexEmbeddingServiceEndpoint(env().VERTEX_AI_LOCATION),
       )) as { embedding?: { values?: number[] } })
     : ((await vertexFetch(`${model}:predict`, {
         instances: [{ content: text, task_type: taskType }],
