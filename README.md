@@ -4,6 +4,8 @@ Docent is an AI-powered knowledge workspace for teams that want their internal p
 
 It combines a calm wiki experience with reliable document ingestion and grounded AI answers. People can organize knowledge into spaces, upload PDF/DOCX/ODT files, and ask questions that are answered with citations back to the source material.
 
+Try it: https://docent-dev-mslclny3pa-lz.a.run.app/
+
 ![Docent AI workflow](public/docent-ai-flow.png)
 
 ## Why it stands out
