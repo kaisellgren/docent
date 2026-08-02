@@ -166,6 +166,12 @@ class DocentDev extends TerraformStack {
       member: `serviceAccount:${appAccount.email}`,
       dependsOn: [queue],
     })
+    new google.serviceAccountIamMember.ServiceAccountIamMember(this, 'app-task-identity', {
+      serviceAccountId: taskAccount.name,
+      role: 'roles/iam.serviceAccountUser',
+      member: `serviceAccount:${appAccount.email}`,
+      dependsOn: [appAccount, taskAccount],
+    })
     for (const [index, secret] of secrets.entries()) {
       new google.secretManagerSecretIamMember.SecretManagerSecretIamMember(this, `secret-${index}-accessor`, {
         secretId: secret.secretId,
