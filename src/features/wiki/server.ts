@@ -52,17 +52,6 @@ const spaceSchema = z.object({
   updatedAt: z.string(),
   isFavorite: z.boolean(),
 })
-const spacePageSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string(),
-  title: z.string(),
-  parentPageId: z.string().uuid().nullable(),
-  updatedAt: z.string(),
-  author: z.string(),
-  ingestionStatus: ingestionStatusSchema.nullable(),
-  ingestionError: z.string().nullable(),
-})
-
 function slugify(title: string): string {
   const slug = title
     .toLowerCase()
