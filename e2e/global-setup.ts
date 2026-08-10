@@ -13,6 +13,13 @@ export default async function globalSetup() {
   let userId = ''
   try {
     const user = await pool.transaction(async (transaction) => {
+      await transaction.query(
+        sql.unsafe`UPDATE wiki_page SET current_revision_id = NULL WHERE space_id = ${testSpaceId}`,
+      )
+      await transaction.query(
+        sql.unsafe`DELETE FROM page_revision WHERE page_id IN (SELECT id FROM wiki_page WHERE space_id = ${testSpaceId})`,
+      )
+      await transaction.query(sql.unsafe`DELETE FROM wiki_page WHERE space_id = ${testSpaceId}`)
       await transaction.query(sql.unsafe`UPDATE wiki_page SET current_revision_id = NULL WHERE id = ${testPageId}`)
       await transaction.query(sql.unsafe`DELETE FROM page_revision WHERE page_id = ${testPageId}`)
       await transaction.query(sql.unsafe`DELETE FROM wiki_page WHERE id = ${testPageId}`)
