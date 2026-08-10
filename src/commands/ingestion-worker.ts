@@ -1,4 +1,4 @@
-import { processPendingIngestionJobs } from '@/features/ingestion/server'
+import { processPendingIngestionJobs } from '@/features/ingestion/ingestion.server'
 import { closeDb } from '@/server/db'
 
 const watch = process.argv.includes('--watch')

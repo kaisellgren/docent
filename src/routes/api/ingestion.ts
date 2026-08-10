@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { processIngestionJob } from '@/features/ingestion/server'
+import { processIngestionJob } from '@/features/ingestion/ingestion.server'
 import { env } from '@/server/env'
 
 const payloadSchema = z.object({ jobId: z.string().uuid() })
