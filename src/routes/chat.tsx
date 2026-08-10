@@ -3,7 +3,8 @@ import { createServerFn, useServerFn } from '@tanstack/react-start'
 import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { askDocent, deleteConversation, getConversationMessages, getConversations } from '@/features/chat/server'
+import { askDocent } from '@/features/chat/ask'
+import { deleteConversation, getConversationMessages, getConversations } from '@/features/chat/server'
 import { currentSession } from '@/server/auth'
 import { TopNavigation } from '@/components/navigation'
 import { FilePreviewModal } from '@/components/file-preview-modal'
@@ -23,10 +24,9 @@ export const Route = createFileRoute('/chat')({
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
     const viewer = await getViewer()
-    if (!viewer) return { viewer, conversations: [], messages: [] }
+    if (!viewer) return { viewer, messages: [] }
     return {
       viewer,
-      conversations: await getConversations(),
       messages: deps.conversationId
         ? await getConversationMessages({ data: { conversationId: deps.conversationId } })
         : [],
@@ -37,10 +37,13 @@ export const Route = createFileRoute('/chat')({
 
 function ChatPage() {
   const { q, conversationId } = Route.useSearch()
-  const { viewer, conversations, messages } = Route.useLoaderData()
+  const { viewer, messages } = Route.useLoaderData()
   const ask = useServerFn(askDocent)
+  const loadConversations = useServerFn(getConversations)
   const removeConversation = useServerFn(deleteConversation)
   const router = useRouter()
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversationsLoading, setConversationsLoading] = useState(Boolean(viewer))
   const [question, setQuestion] = useState(q)
   const [conversationQuery, setConversationQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,6 +53,28 @@ function ChatPage() {
   const composerInputRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const autoSentQuestionRef = useRef('')
+
+  useEffect(() => {
+    if (!viewer) {
+      setConversationsLoading(false)
+      return
+    }
+    let active = true
+    setConversationsLoading(true)
+    void loadConversations()
+      .then((nextConversations) => {
+        if (active) setConversations([...nextConversations])
+      })
+      .catch(() => {
+        if (active) setError('Conversation history could not be loaded.')
+      })
+      .finally(() => {
+        if (active) setConversationsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [loadConversations, viewer])
 
   useEffect(() => {
     setQuestion(q)
@@ -105,6 +130,7 @@ function ChatPage() {
       const result = await ask({ data: { message, conversationId: conversationId || undefined } })
       await router.navigate({ to: '/chat', search: { q: '', conversationId: result.conversationId } })
       await router.invalidate()
+      setConversations([...(await loadConversations())])
       setOptimisticMessage(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Docent could not answer right now.')
@@ -129,10 +155,9 @@ function ChatPage() {
     setError('')
     try {
       await removeConversation({ data: { conversationId: id } })
+      setConversations((current) => current.filter((conversation) => conversation.id !== id))
       if (id === conversationId) {
         await router.navigate({ to: '/chat', search: { q: '', conversationId: '' } })
-      } else {
-        await router.invalidate()
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Conversation could not be deleted.')
@@ -183,7 +208,12 @@ function ChatPage() {
               />
             </label>
             <div className={styles.chatConversationList}>
-              {visibleConversations.length === 0 ? (
+              {conversationsLoading ? (
+                <p className={styles.chatHistoryLoading} role="status">
+                  <span className={styles.chatHistorySpinner} aria-hidden="true" />
+                  Loading conversations…
+                </p>
+              ) : visibleConversations.length === 0 ? (
                 <p className={styles.chatEmptyHistory}>Your conversations will appear here.</p>
               ) : (
                 visibleConversations.map((conversation) => (

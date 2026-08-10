@@ -8,6 +8,7 @@ const thinkingDotPulse = keyframes({
   '0%, 60%, 100%': { transform: 'translateY(0)', opacity: 0.35 },
   '30%': { transform: 'translateY(-.35rem)', opacity: 1 },
 })
+const chatHistorySpin = keyframes({ to: { transform: 'rotate(360deg)' } })
 
 export const appShell = style({
   minHeight: '100vh',
@@ -280,6 +281,23 @@ export const chatConversationMeta = style({
   fontSize: '1.05rem',
 })
 export const chatEmptyHistory = style({ padding: '1rem 0', color: '#64828c', fontSize: '1.25rem', lineHeight: 1.5 })
+export const chatHistoryLoading = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.8rem',
+  padding: '1rem 0',
+  color: '#64828c',
+  fontSize: '1.25rem',
+  lineHeight: 1.5,
+})
+export const chatHistorySpinner = style({
+  width: '1.2rem',
+  height: '1.2rem',
+  border: '0.2rem solid rgba(100,130,140,.35)',
+  borderTopColor: '#1fc8b5',
+  borderRadius: '50%',
+  animation: `${chatHistorySpin} 0.8s linear infinite`,
+})
 export const chatHistoryFoot = style({
   display: 'flex',
   alignItems: 'flex-start',
