@@ -3,7 +3,7 @@ import mammoth from 'mammoth'
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { Storage } from '@google-cloud/storage'
 import { z } from 'zod'
-import { db, sql } from '@/server/db'
+import { db } from '@/server/db'
 import { env } from '@/server/env'
 import { embedText } from '@/features/ai/vertex'
 import { chunkText } from '@/features/ingestion/chunk'
@@ -17,13 +17,6 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
-const jobSchema = z.object({
-  id: z.string().uuid(),
-  contentKind: z.enum(['page', 'file']),
-  pageRevisionId: z.string().uuid().nullable(),
-  fileId: z.string().uuid().nullable(),
-})
-const pendingJobSchema = z.object({ id: z.string().uuid() })
 const fileSchema = repositoryFileSchema
 const repository = createIngestionRepository(db)
 
@@ -69,7 +62,6 @@ async function extractFileText(file: z.infer<typeof fileSchema>) {
 }
 
 export async function processIngestionJob(jobId: string) {
-  const pool = await db()
   const job = await repository.claimJob(jobId)
   if (!job) return { processed: false }
   try {
@@ -142,7 +134,6 @@ export async function processIngestionJob(jobId: string) {
 }
 
 export async function processPendingIngestionJobs(limit = 10, includeFailed = true) {
-  const pool = await db()
   const jobs = await repository.listPending(limit, includeFailed)
   let processed = 0
   let failed = 0
