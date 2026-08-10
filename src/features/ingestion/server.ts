@@ -8,6 +8,10 @@ import { env } from '@/server/env'
 import { embedText } from '@/features/ai/vertex'
 import { chunkText } from '@/features/ingestion/chunk'
 import { generateFilePreview } from '@/features/ingestion/preview'
+import {
+  createIngestionRepository,
+  fileSchema as repositoryFileSchema,
+} from '@/features/ingestion/ingestion.repository'
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
@@ -20,16 +24,8 @@ const jobSchema = z.object({
   fileId: z.string().uuid().nullable(),
 })
 const pendingJobSchema = z.object({ id: z.string().uuid() })
-const fileSchema = z.object({
-  id: z.string().uuid(),
-  objectKey: z.string(),
-  mediaType: z.enum([
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.oasis.opendocument.text',
-  ]),
-  filename: z.string(),
-})
+const fileSchema = repositoryFileSchema
+const repository = createIngestionRepository(db)
 
 async function extractFileText(file: z.infer<typeof fileSchema>) {
   const projectId = env().GOOGLE_CLOUD_PROJECT
@@ -74,11 +70,7 @@ async function extractFileText(file: z.infer<typeof fileSchema>) {
 
 export async function processIngestionJob(jobId: string) {
   const pool = await db()
-  const job = await pool.maybeOne(
-    sql.type(
-      jobSchema,
-    )`UPDATE ingestion_job SET status = 'processing', attempts = attempts + 1, started_at = now() WHERE id = ${jobId} AND status IN ('pending', 'failed') RETURNING id, content_kind AS "contentKind", page_revision_id AS "pageRevisionId", file_id AS "fileId"`,
-  )
+  const job = await repository.claimJob(jobId)
   if (!job) return { processed: false }
   try {
     let text = ''
@@ -86,36 +78,32 @@ export async function processIngestionJob(jobId: string) {
     let previewFile: z.infer<typeof fileSchema> | undefined
     let previewBytes: Buffer | undefined
     if (job.contentKind === 'page') {
-      const row = await pool.one(
-        sql.type(
-          z.object({ markdown: z.string(), pageId: z.string().uuid() }),
-        )`SELECT markdown, page_id AS "pageId" FROM page_revision WHERE id = ${job.pageRevisionId}`,
-      )
+      const row = await repository.getPageRevision(job.pageRevisionId!)
       text = row.markdown
       pageId = row.pageId
-      await pool.query(sql.unsafe`DELETE FROM content_chunk WHERE page_revision_id = ${job.pageRevisionId}`)
+      await repository.deletePageChunks(job.pageRevisionId!)
     } else {
-      const file = await pool.one(
-        sql.type(
-          fileSchema,
-        )`SELECT id, object_key AS "objectKey", media_type AS "mediaType", original_filename AS filename FROM stored_file WHERE id = ${job.fileId}`,
-      )
+      const file = await repository.getFile(job.fileId!)
       const extracted = await extractFileText(file)
       text = extracted.text
       previewFile = file
       previewBytes = extracted.bytes
-      await pool.query(sql.unsafe`DELETE FROM content_chunk WHERE file_id = ${job.fileId}`)
+      await repository.deleteFileChunks(job.fileId!)
     }
     for (const [ordinal, value] of chunkText(text).entries()) {
       const embedding = await embedText(value)
-      await pool.query(
-        sql.unsafe`INSERT INTO content_chunk (content_kind, page_id, page_revision_id, file_id, ordinal, text_content, embedding) VALUES (${job.contentKind}, ${pageId ?? null}, ${job.pageRevisionId ?? null}, ${job.fileId ?? null}, ${ordinal}, ${value}, ${JSON.stringify(embedding)}::vector)`,
-      )
+      await repository.insertChunk({
+        contentKind: job.contentKind,
+        pageId: pageId ?? null,
+        pageRevisionId: job.pageRevisionId,
+        fileId: job.fileId,
+        ordinal,
+        text: value,
+        embedding,
+      })
     }
     if (job.fileId) {
-      await pool.query(
-        sql.unsafe`UPDATE stored_file SET extraction_status = 'ready', extraction_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
-      )
+      await repository.markFileReady(job.fileId)
       try {
         if (!previewFile || !previewBytes) throw new Error('File preview source is unavailable')
         const previewHtml = await generateFilePreview({ ...previewFile, bytes: previewBytes })
@@ -130,20 +118,14 @@ export async function processIngestionJob(jobId: string) {
             contentType: 'text/html; charset=utf-8',
             metadata: { cacheControl: 'private, max-age=300' },
           })
-        await pool.query(
-          sql.unsafe`UPDATE stored_file SET preview_object_key = ${previewObjectKey}, preview_status = 'ready', preview_error = NULL, updated_at = now() WHERE id = ${job.fileId}`,
-        )
+        await repository.markPreview(job.fileId, 'ready', previewObjectKey, null)
       } catch (error) {
         const message = errorMessage(error)
         console.warn('[ingestion] preview conversion failed', { fileId: job.fileId, message })
-        await pool.query(
-          sql.unsafe`UPDATE stored_file SET preview_status = 'failed', preview_error = ${message}, updated_at = now() WHERE id = ${job.fileId}`,
-        )
+        await repository.markPreview(job.fileId, 'failed', null, message)
       }
     }
-    await pool.query(
-      sql.unsafe`UPDATE ingestion_job SET status = 'ready', completed_at = now(), error_message = NULL WHERE id = ${job.id}`,
-    )
+    await repository.markJobReady(job.id)
     return { processed: true }
   } catch (error) {
     const message = errorMessage(error)
@@ -154,24 +136,14 @@ export async function processIngestionJob(jobId: string) {
       fileId: job.fileId,
       message,
     })
-    await pool.query(
-      sql.unsafe`UPDATE ingestion_job SET status = 'failed', error_message = ${message}, completed_at = now() WHERE id = ${job.id}`,
-    )
-    if (job.fileId)
-      await pool.query(
-        sql.unsafe`UPDATE stored_file SET extraction_status = 'failed', extraction_error = ${message}, preview_status = 'failed', preview_error = ${message} WHERE id = ${job.fileId}`,
-      )
+    await repository.markJobFailed(job.id, message, job.fileId)
     throw error
   }
 }
 
 export async function processPendingIngestionJobs(limit = 10, includeFailed = true) {
   const pool = await db()
-  const jobs = await pool.any(sql.type(pendingJobSchema)`
-    SELECT id FROM ingestion_job
-    WHERE status = 'pending' OR (${includeFailed} AND status = 'failed')
-    ORDER BY created_at ASC LIMIT ${limit}
-  `)
+  const jobs = await repository.listPending(limit, includeFailed)
   let processed = 0
   let failed = 0
   const failures: Array<{ jobId: string; message: string }> = []
