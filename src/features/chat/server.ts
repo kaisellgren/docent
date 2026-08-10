@@ -32,12 +32,24 @@ const conversationMessageSchema = z.object({
 const conversationIdSchema = z.object({ conversationId: z.string().uuid() })
 
 export const getConversations = createServerFn({ method: 'GET' }).handler(async () => {
+  const startedAt = performance.now()
   const user = await requireSession()
-  return (await db()).any(sql.type(conversationSchema)`
+  const sessionValidatedAt = performance.now()
+  const pool = await db()
+  const poolReadyAt = performance.now()
+  const conversations = await pool.any(sql.type(conversationSchema)`
     SELECT id, title, updated_at::text AS "updatedAt" FROM conversation
     WHERE owner_id = ${user.userId} AND deleted_at IS NULL
     ORDER BY updated_at DESC LIMIT 30
   `)
+  const queryCompletedAt = performance.now()
+  console.info('[timing] getConversations', {
+    requireSessionMs: Math.round(sessionValidatedAt - startedAt),
+    dbMs: Math.round(poolReadyAt - sessionValidatedAt),
+    queryMs: Math.round(queryCompletedAt - poolReadyAt),
+    totalMs: Math.round(queryCompletedAt - startedAt),
+  })
+  return conversations
 })
 
 export const getConversationMessages = createServerFn({ method: 'GET' })
