@@ -1,0 +1,7 @@
+export const authFile = 'e2e/.auth/editor.json'
+export const testUserId = '00000000-0000-0000-0000-000000000001'
+export const testSpaceId = '00000000-0000-0000-0000-000000000101'
+export const testPageId = '00000000-0000-0000-0000-000000000201'
+export const testRevisionId = '00000000-0000-0000-0000-000000000301'
+export const testSpaceSlug = 'e2e-engineering'
+export const testPageSlug = 'e2e-onboarding'

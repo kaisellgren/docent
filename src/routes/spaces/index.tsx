@@ -104,7 +104,7 @@ function SpacesIndex() {
                 <input
                   className={styles.spacesSearchInput}
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onInput={(event) => setQuery(event.currentTarget.value)}
                   placeholder="Find a space…"
                   aria-label="Find a space"
                 />
