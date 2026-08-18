@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP_URL: http://127.0.0.1:3000
-      DATABASE_URL: postgres://docent:docent@127.0.0.1:5432/docent
+      DATABASE_URL: postgres://docent:docent@127.0.0.1:5432/docent?sslmode=disable
       SESSION_SECRET: ci-only-session-secret-that-is-at-least-32-characters
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
