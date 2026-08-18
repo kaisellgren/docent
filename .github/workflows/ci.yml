@@ -4,12 +4,33 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
+      APP_URL: http://127.0.0.1:3000
+      DATABASE_URL: postgres://docent:docent@127.0.0.1:5432/docent
+      SESSION_SECRET: ci-only-session-secret-that-is-at-least-32-characters
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
       GOOGLE_CLOUD_PROJECT: docent-ci
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: docent
+          POSTGRES_USER: docent
+          POSTGRES_PASSWORD: docent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U docent -d docent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with: { node-version: 26, cache: npm }
       - run: npm ci
+      - name: Apply database migrations
+        run: npx --yes dbmate@2.34.1 --no-dump-schema up
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test

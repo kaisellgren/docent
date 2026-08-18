@@ -1,13 +1,14 @@
+import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { SignJWT } from 'jose'
 import { createPool, sql } from 'slonik'
 import { authFile, testPageId, testPageSlug, testRevisionId, testSpaceId, testSpaceSlug } from './auth'
 
 export default async function globalSetup() {
-  process.loadEnvFile?.('.env')
+  if (existsSync('.env')) process.loadEnvFile?.('.env')
   const databaseUrl = process.env.DATABASE_URL
   const sessionSecret = process.env.SESSION_SECRET
-  if (!databaseUrl || !sessionSecret) throw new Error('E2E tests require DATABASE_URL and SESSION_SECRET in .env')
+  if (!databaseUrl || !sessionSecret) throw new Error('E2E tests require DATABASE_URL and SESSION_SECRET')
   const email = process.env.EDITOR_EMAILS?.split(',')[0]?.trim().toLowerCase() ?? 'e2e-editor@example.com'
   const pool = await createPool(databaseUrl)
   let userId = ''
