@@ -426,7 +426,7 @@ function MessageBubble({
             <a
               className={styles.chatMessageReferenceLink}
               key={citation.number}
-              href={`#${referenceId(message.id, citation)}`}
+              href={citation.fileId ? `#${referenceId(message.id, citation)}` : citationHref(citation, message.id)}
               onClick={(event) => {
                 if (citation.fileId) {
                   event.preventDefault()
@@ -490,6 +490,10 @@ function uniqueReferences(messages: Messages): Reference[] {
 
 function referenceId(messageId: string, citation: Citation) {
   return `reference-${messageId}-${citation.number}`
+}
+
+function citationHref(citation: Citation, messageId: string) {
+  return citation.slug ? `/spaces/${citation.slug}` : `#${referenceId(messageId, citation)}`
 }
 
 function formatDate(value: string) {
