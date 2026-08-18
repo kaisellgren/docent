@@ -4,14 +4,7 @@ import { getDocentAgent } from '@/mastra'
 import { chatInputSchema } from '@/server/content'
 import { requireSession } from '@/server/auth'
 import { chatRepository } from '@/server/dependencies'
-
-function citedNumberSet(answer: string): Set<number> {
-  return new Set(
-    [...answer.matchAll(/\[(\d+)\]/g)]
-      .map((match) => Number(match[1]))
-      .filter((number) => Number.isInteger(number) && number > 0),
-  )
-}
+import { citedNumbers } from './citations'
 
 function citationExcerpt(text: string): string {
   if (/[{}]|(?:@_?text|text:(?:span|p)|_text|#text)/i.test(text)) return ''
@@ -36,7 +29,7 @@ export const askDocent = createServerFn({ method: 'POST' })
       .generate(`Knowledge:\n${context || 'No indexed knowledge is available.'}\n\nQuestion: ${data.message}`)
       .then((result) => result.text)
     const citedSources = sources.flatMap((source, index) =>
-      citedNumberSet(answer).has(index + 1) ? [{ source, ordinal: index }] : [],
+      citedNumbers(answer).has(index + 1) ? [{ source, ordinal: index }] : [],
     )
     const message = await chatRepository.addMessage(conversation.id, 'assistant', answer)
     for (const { source, ordinal } of citedSources)

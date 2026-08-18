@@ -4,6 +4,7 @@ import { ArrowUp, BookOpen, Clock3, MessageSquare, Plus, Search, Sparkles, Trash
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { askDocent } from '@/features/chat/ask.functions'
+import { removeCitations } from '@/features/chat/citations'
 import { deleteConversation, getConversationMessages, getConversations } from '@/features/chat/functions'
 import { currentSession } from '@/server/auth'
 import { TopNavigation } from '@/components/navigation'
@@ -443,10 +444,7 @@ function MessageBubble({
 }
 
 function CitedText({ text, citations }: { text: string; citations: Citation[] }) {
-  const markdown = text.replace(/\[(\d+)\]/g, (match, number: string) => {
-    const citation = citations.find((item) => item.number === Number(number))
-    return citation ? '' : match
-  })
+  const markdown = removeCitations(text, new Set(citations.map((citation) => citation.number)))
   return <ReactMarkdown>{markdown}</ReactMarkdown>
 }
 
